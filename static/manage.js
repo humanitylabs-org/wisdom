@@ -1,0 +1,59 @@
+'use strict';
+const CollectionManager=(()=>{
+ let data=null,loading=false,error='',busy=false,serial=0,focusTarget='[data-import]',closingSheet=false;
+ const active=()=>location.hash==='#/manage';
+ const label=s=>({enabled:'Enabled',disabled:'Disabled',staged:'Staged',removed:'Removed — files and reading data kept'}[s]||s);
+ async function load(){if(!active())return;const mine=++serial;loading=true;error='';try{const next=await api('library');if(mine===serial)data=next}catch(e){if(mine===serial)error=e.message}finally{if(mine===serial){loading=false;if(active())window.renderWisdom()}}}
+ const row=(b,source=false)=>`<li class="wm-row"><div><h3>${esc(b.title)}</h3><p>${source?'Configured source':`${b.collections} collections · ${b.chapters} texts`} · ${esc(b.license)}</p><small>${esc(source?'Not installed':label(b.status))}</small></div><button class="wm-more" data-bundle="${esc(b.id)}" data-source="${source}" aria-label="Manage ${esc(b.title)}">⋯</button></li>`;
+ function render(){
+  if(!data&&!loading&&!error)queueMicrotask(load);
+  const bundles=data?.bundles||[],s=data?.source;
+  return `<section class="wm-page"><a class="wm-back" href="#" data-wisdom-route="">‹ Back to reading</a><header><h1>Manage collections</h1><button class="wm-import" data-import>Import bundle…</button><input id="wm-file" type="file" accept=".zip,application/zip" hidden></header><p><a href="#/shelf/shared" data-wisdom-route="/shelf/shared">Shared library</a> · <a href="#/shelf/private" data-wisdom-route="/shelf/private">My library</a></p><p>File imports and requested collections default to My library, regardless of licence. Only a trusted configured source can approve Shared library content. Reading data stays private.</p>${error?`<p role="alert">${esc(error)}</p><button data-library-retry>Refresh Library</button>`:''}${loading?'<p role="status">Checking your library…</p>':''}<h2>On your shelves</h2><ul>${bundles.filter(b=>b.status==='enabled').map(b=>row(b)).join('')||'<li class="wm-empty">No collections enabled yet.</li>'}</ul><h2>Available</h2><ul>${bundles.filter(b=>b.status!=='enabled').map(b=>row(b)).join('')}${(s?.packages||[]).filter(b=>!bundles.some(x=>x.id===b.id)).map(b=>row(b,true)).join('')||(!bundles.some(b=>b.status!=='enabled')?'<li class="wm-empty">Import a bundle to add a collection.</li>':'')}</ul><h2>Source</h2><p>${esc(s?.notice||'Checking source…')}</p><p class="wm-note">Only files you import and the explicitly configured source appear here. This is not a global content store.</p></section>`;
+ }
+ function close(){const sh=document.querySelector('.wm-sheet');if(!sh)return false;sh.remove();document.getElementById('app').inert=false;requestAnimationFrame(()=>document.querySelector(focusTarget)?.focus());if(history.state?.collectionSheet){closingSheet=true;history.back()}return true}
+ window.addEventListener('popstate',()=>{if(document.querySelector('.wm-sheet')){document.getElementById('app').inert=false;requestAnimationFrame(()=>document.querySelector(focusTarget)?.focus())}},true);
+ function sheet(title,body,actions){
+  const existing=document.querySelector('.wb-sheet');if(!existing){const id=document.activeElement?.dataset.bundle;focusTarget=id?'[data-bundle="'+id+'"]':'[data-import]'}existing?.remove();if(!existing)history.pushState({wisdom:true,collectionSheet:true},'',location.href);
+  const el=document.createElement('div');el.className='wb-sheet wm-sheet';
+  el.innerHTML=`<div class="wb-sheet-card" role="dialog" aria-modal="true" aria-labelledby="wm-title"><h2 id="wm-title" tabindex="-1">${esc(title)}</h2>${body}<div class="wm-actions">${actions}<button data-wm-close>Close</button></div></div>`;
+  document.getElementById('app').inert=true;document.body.append(el);el.querySelector('h2').focus();el.querySelector('[data-wm-close]').onclick=close;
+  el.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();close()}if(e.key==='Tab'){const xs=[...el.querySelectorAll('button:not(:disabled),summary,[tabindex="0"]')];if(!xs.length)return;const i=xs.indexOf(document.activeElement);if(e.shiftKey&&(i<=0)){e.preventDefault();xs.at(-1).focus()}else if(!e.shiftKey&&(i<0||i===xs.length-1)){e.preventDefault();xs[0].focus()}}};
+  return el;
+ }
+ const author=b=>{const a=b.authoring;if(!a)return'';const t=a.status==='checked'?`Checked: all ${a.chapters_verified} texts match Wisdom's writing helper (${a.requested_model}); receipts, raw output and quotations were rechecked against the source text included with this collection. A consistency check, not a signature.`:a.status==='partial'?`Partly checked: ${a.chapters_verified} texts rechecked against included raw output and source text; ${a.chapters_unverified.length} not checked`:a.status==='pinned'?`Receipts matched Wisdom's writing helper (${a.requested_model}) when imported; quotations not rechecked (imported before source text travelled with collections)`:a.reason&&a.reason.startsWith('Receipts present')?'Author not checked (receipts without the raw output and source text needed to recheck them)':'Author not checked (imported without Wisdom author receipts)';return`<p><strong>Authorship</strong><br>${esc(t)}</p>`};
+const rights=b=>`<p><strong>Declared rights</strong><br>${esc(b.rights||'See source bundle')}</p><p><strong>Licence</strong><br>${esc(b.license)}</p><p><strong>Attribution</strong><br>${esc(b.attribution)}</p>${author(b)}${b.rights!=='redistributable'?'<p class="wm-rights">Private or unknown rights. Importing does not give permission to share this content.</p>':''}`;
+ async function change(id,action){if(busy)return;busy=true;const updateHold=WizardApp.update.hold('Wisdom library import/update');try{await api('library/action',{id,action});close();data=null;await load();await Wisdom.load();toast(action==='enable'?'Collection enabled.':'Library updated. Files and reading data kept.')}catch(e){toast(e.message)}finally{busy=false;updateHold.release()}}
+ function manage(id,source){const b=source?data.source.packages.find(b=>b.id===id):data.bundles.find(b=>b.id===id);if(!b)return;
+  const acts=source?'<button data-wm-stage>Import preview</button>':`<button data-wm-action="${b.status==='enabled'?'disable':'enable'}">${b.status==='enabled'?'Disable':b.status==='staged'?'Install and enable':'Enable'}</button>${b.status!=='removed'?'<button data-wm-remove>Remove from library…</button>':''}`;
+  const sh=sheet(b.title,`${rights(b)}<p>${esc(source?'Not installed':label(b.status))}</p>`,acts);
+  sh.querySelector('[data-wm-action]')?.addEventListener('click',e=>change(id,e.currentTarget.dataset.wmAction));
+  sh.querySelector('[data-wm-remove]')?.addEventListener('click',()=>{sh.querySelector('.wm-actions').innerHTML='<p>Hide this bundle from the library? Files, highlights and reading positions are kept. Enable it again to restore it.</p><button data-confirm-remove>Remove from library</button><button data-wm-close>Cancel</button>';sh.querySelector('[data-confirm-remove]').onclick=()=>change(id,'remove');sh.querySelector('[data-wm-close]').onclick=close});
+  sh.querySelector('[data-wm-stage]')?.addEventListener('click',async()=>{if(busy)return;busy=true;const updateHold=WizardApp.update.hold('Wisdom library import/update');try{const staged=await api('library/source',{id});data=null;await load();if(active())preview(staged)}catch(e){toast(e.message)}finally{busy=false;updateHold.release()}});
+ }
+ function preview(b){const sh=sheet('Import preview',`<h3>${esc(b.title)}</h3><p>${b.collections} collections · ${b.chapters} texts</p>${rights(b)}<p>Verified and staged, not on your shelves yet. No code from the bundle is executed.</p>`,'<button data-wm-enable>Install and enable</button>');sh.querySelector('[data-wm-enable]').onclick=()=>change(b.id,'enable')}
+ async function upload(f){if(!f||busy)return;if(f.size>24*1024*1024){toast('Bundle must be 24 MiB or smaller.');return}busy=true;const updateHold=WizardApp.update.hold('Wisdom library import/update');try{const r=await fetch(new URL('api/library/stage',base),{method:'POST',headers:{'Content-Type':'application/zip'},body:f,signal:AbortSignal.timeout(30000)});const d=await r.json();if(!r.ok)throw Error(d.error);data=null;await load();if(active())preview(d);else toast('Bundle staged. Open Library to review and enable it.')}catch(e){error='Import failed: '+(e.message||'Unable to import')+'. Select the bundle again to retry. Your library is unchanged.';if(active())window.renderWisdom();toast('Import failed. See Library for details.')}finally{busy=false;updateHold.release()}}
+ function bind(){document.querySelectorAll('[data-export-collection]').forEach(b=>b.onclick=()=>exportCollection(b.dataset.exportCollection));if(!active()){serial++;loading=false;data=null;error='';return;}document.querySelector('[data-import]')?.addEventListener('click',()=>document.getElementById('wm-file').click());document.querySelector('#wm-file')?.addEventListener('change',e=>upload(e.target.files[0]));document.querySelectorAll('[data-bundle]').forEach(b=>b.onclick=()=>manage(b.dataset.bundle,b.dataset.source==='true'));document.querySelector('[data-library-retry]')?.addEventListener('click',load)}
+ async function exportCollection(id){
+  if(busy)return;busy=true;
+  const sh=sheet('Export this collection','<p role="status">Preparing a private download preview…</p>','');
+  focusTarget='[data-export-collection="'+id+'"]';
+  try{
+   const p=await api('library/export/preview',{id});if(!sh.isConnected)return;
+   const dialog=sheet('Export this collection',`<h3>${esc(p.title)}</h3><p>${p.chapters.length} texts · ${p.files.length} files · ${p.bytes} bytes</p>${rights(p)}<p>${esc(p.notice)}</p>${p.source_text?`<p class="wm-rights" data-export-source-text><strong>Includes source text.</strong> ${p.source_text.packets} source packet(s) and the raw author output for ${p.source_text.chapters} text(s) (${p.source_text.bytes} bytes) travel with this file so the receiving Wisdom can recheck quotations. Anyone you share it with can read them.</p>`:''}<h3>Included texts</h3><ol>${p.chapters.map(e=>`<li>${esc(e.title)} <small>(${esc(e.id)})</small></li>`).join('')}</ol><details><summary>Exact files and checksums</summary><ul>${p.files.map(f=>`<li>${esc(f.name)} · ${f.bytes} bytes<br><code>${esc(f.sha256)}</code></li>`).join('')}</ul><p>ZIP SHA256: <code>${esc(p.sha256)}</code></p></details>`, '<button data-confirm-export>Confirm download only</button>');
+   dialog.querySelector('[data-confirm-export]').onclick=async()=>{
+    if(busy)return;busy=true;const button=dialog.querySelector('[data-confirm-export]');button.disabled=true;
+    try{
+     const r=await fetch(new URL('api/library/export',base),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,sha256:p.sha256,confirm:true}),signal:AbortSignal.timeout(30000)});
+     if(!r.ok)throw Error((await r.json()).error||'Download failed');
+     const blob=await r.blob();if(!dialog.isConnected)return;
+     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=p.id+'.zip';a.hidden=true;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+     close();toast('Download prepared. Nothing published; library unchanged.');
+    }catch(e){toast(e.message)}finally{busy=false;button.disabled=false}
+   };
+  }catch(e){if(sh.isConnected)close();toast(e.message)}finally{busy=false}
+ }
+ window.addEventListener('hashchange',()=>{if(!active())data=null});
+ // A close button/download already consumed the overlay's Back step.
+ function consumeBack(){const closing=closingSheet;closingSheet=false;return closing}
+ return {render,bind,close,consumeBack};
+})();

@@ -1,0 +1,767 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Wisdom",
+    "version": "0.4.0-private.24"
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "summary": "Health",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        }
+      }
+    },
+    "/api/wisdom": {
+      "get": {
+        "summary": "Enabled collections and private reading state",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        },
+        "description": "Collections expose library_scope (private/shared), library_provenance and bundle_id. Scope is trusted installation state, independent of rights; absent legacy approval defaults private. request_enabled reports configured optional generation, not proven availability."
+      }
+    },
+    "/api/library": {
+      "get": {
+        "summary": "Bundles and bounded source inventory",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        },
+        "description": "Each bundle carries `authoring`: status checked (every chapter's receipt, raw author output and quotations were rechecked against the source text carried in the bundle; a consistency check, not a cryptographic signature), partial (only some chapters checked), unverified (no receipts, or receipts without the raw output and source text; authorship unknown), or legacy pinned (receipts matched at import before source text travelled; quotations not rechecked), with workflow/prompt digests and observed model when checked."
+      }
+    },
+    "/api/library/stage": {
+      "post": {
+        "summary": "Validate and stage disabled ZIP",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/zip": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "description": "File/API/MCP uploads default to My library regardless of manifest claims or rights. Only trusted starter/configured source and offline operator approval can assign Shared library provenance. A ZIP whose authoring/receipts.json fails the installed pinned workflow (other or mixed model, other prompt/workflow, malformed, chapter bytes differ), whose carried raw author output (authoring/output/<chapter>.json) or source text (authoring/sources/<sha256>.json) disagrees with its receipt, or whose quotations are not verbatim in that source text, is refused with 400 and nothing is staged; without receipts it is staged as unverified."
+      }
+    },
+    "/api/library/action": {
+      "post": {
+        "summary": "Enable/disable/remove; retain files and reading state",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "enable",
+                      "disable",
+                      "remove"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/library/source": {
+      "post": {
+        "summary": "Stage exact configured source id",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wisdom/reaction": {
+      "post": {
+        "summary": "Set saved/read/archive/rating/progress or thinker priority",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "entry",
+                      "thinker"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "field": {
+                    "type": "string",
+                    "enum": [
+                      "saved",
+                      "read",
+                      "archived",
+                      "done",
+                      "rating",
+                      "progress",
+                      "more"
+                    ]
+                  },
+                  "value": {
+                    "type": [
+                      "boolean",
+                      "integer"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wisdom/highlight": {
+      "post": {
+        "summary": "Add/remove highlight with text anchors, or set/clear its note",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "add",
+                      "remove",
+                      "note"
+                    ]
+                  },
+                  "entry_id": {
+                    "type": "string"
+                  },
+                  "start": {
+                    "type": "integer"
+                  },
+                  "end": {
+                    "type": "integer"
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "integer"
+                  },
+                  "body_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 8000,
+                    "description": "Optional comment on the passage; an empty string clears it. Overlapping highlights merge their notes."
+                  }
+                },
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "properties": {
+                      "action": {
+                        "const": "add"
+                      }
+                    },
+                    "required": [
+                      "action",
+                      "entry_id",
+                      "start",
+                      "end",
+                      "text",
+                      "body_sha256"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "action": {
+                        "const": "remove"
+                      }
+                    },
+                    "required": [
+                      "action",
+                      "id"
+                    ]
+                  },
+                  {
+                    "properties": {
+                      "action": {
+                        "const": "note"
+                      }
+                    },
+                    "required": [
+                      "action",
+                      "id",
+                      "note"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "description": "Add requires actual body_sha256 from the displayed chapter; missing/stale identity fails without mutation. Identical bodies remain valid across revisions. Text must occur in that body after Markdown/whitespace normalization. Remove requires only action and id."
+      }
+    },
+    "/api/wisdom/request": {
+      "post": {
+        "summary": "Durably save then explicit configured Agent Service handoff",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "qa": {
+                    "type": "boolean"
+                  },
+                  "seq": {
+                    "type": "integer"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wisdom/transcribe": {
+      "post": {
+        "summary": "Optional configured transcription endpoint",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "audio/webm": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp": {
+      "post": {
+        "summary": "Stateless Streamable HTTP JSON-RPC",
+        "responses": {
+          "200": {
+            "description": "Result"
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "503": {
+            "description": "Optional integration unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "jsonrpc": {
+                    "type": "string",
+                    "enum": [
+                      "2.0"
+                    ]
+                  },
+                  "id": {},
+                  "method": {
+                    "type": "string"
+                  },
+                  "params": {
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/library/export/preview": {
+      "post": {
+        "summary": "Preview one enabled collection: exact texts, rights, files and SHA256; no personal state",
+        "description": "Does not download, publish or change scope. Use returned SHA256 for explicit download confirmation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Collection title, chapters, thinkers, rights, license, attribution, files with SHA256/bytes, source_sha256 and deterministic ZIP sha256"
+          },
+          "400": {
+            "description": "Invalid, unavailable or unsupported collection"
+          },
+          "403": {
+            "description": "Untrusted host/origin"
+          }
+        }
+      }
+    },
+    "/api/library/export": {
+      "post": {
+        "summary": "Explicitly confirmed single-collection ZIP download; never publishes",
+        "description": "Requires id, exact preview SHA256 and confirm:true. Does not include other collections or personal state and does not change scope. Exported bundles import privately.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "sha256",
+                  "confirm"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Selected collection only, with attachment filename and X-Content-SHA256",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing confirmation, mismatched digest or unavailable collection"
+          },
+          "403": {
+            "description": "Untrusted host/origin"
+          }
+        }
+      }
+    },
+    "/api/library/revision/preview": {
+      "post": {
+        "summary": "Validate/stage one existing collection revision against exact old and new ZIP SHA256. No reader or personal-state change.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "collection_id": {
+                    "type": "string"
+                  },
+                  "old_sha256": {
+                    "type": "string"
+                  },
+                  "new_sha256": {
+                    "type": "string"
+                  },
+                  "zip_base64": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "collection_id",
+                  "old_sha256",
+                  "new_sha256",
+                  "zip_base64"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bounded result; read back target before claiming success"
+          },
+          "400": {
+            "description": "Invalid, stale, unsafe or unsupported request"
+          },
+          "403": {
+            "description": "Untrusted host/origin"
+          }
+        },
+        "description": " Applies the same authoring receipt admission and returns the resulting `authoring` label."
+      }
+    },
+    "/api/library/revision/apply": {
+      "post": {
+        "summary": "Apply an explicitly confirmed exact preview. Retain prior editions, IDs and personal state; changed anchors become earlier-edition quotes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "collection_id": {
+                    "type": "string"
+                  },
+                  "old_sha256": {
+                    "type": "string"
+                  },
+                  "new_sha256": {
+                    "type": "string"
+                  },
+                  "token": {
+                    "type": "string"
+                  },
+                  "confirm": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "collection_id",
+                  "old_sha256",
+                  "new_sha256",
+                  "token",
+                  "confirm"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bounded result; read back target before claiming success"
+          },
+          "400": {
+            "description": "Invalid, stale, unsafe or unsupported request"
+          },
+          "403": {
+            "description": "Untrusted host/origin"
+          }
+        }
+      }
+    },
+    "/api/wisdom/request/route": {
+      "post": {
+        "summary": "Read actual Service route evidence for a request. Accepted is not confirmed effective execution.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "seq": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "seq"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bounded result; read back target before claiming success"
+          },
+          "400": {
+            "description": "Invalid, stale, unsafe or unsupported request"
+          },
+          "403": {
+            "description": "Untrusted host/origin"
+          }
+        }
+      }
+    },
+    "/api/authoring/contract": {
+      "get": {
+        "summary": "Read release-bound author contract, full workflow documentation and allowlisted toolkit manifest",
+        "responses": {
+          "200": {
+            "description": "Pinned author policy, prompt_text, documentation map, contract_identity, contract_sha256, toolkit (sha256, bytes, format, files with path/sha256/bytes) "
+          },
+          "503": {
+            "description": "Installed toolkit unavailable; no fallback"
+          }
+        }
+      }
+    },
+    "/api/authoring/toolkit": {
+      "post": {
+        "summary": "Retrieve app-release executable toolkit; never imported content",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "contract_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "toolkit_sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "contract_sha256",
+                  "toolkit_sha256"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON {contract_sha256,toolkit_sha256,zip_base64}; deterministic stored ZIP, at most 1 MiB, fixed allowlist"
+          },
+          "400": {
+            "description": "Invalid or stale binding; rediscover installed contract"
+          },
+          "403": {
+            "description": "Untrusted host/origin"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+/* Wizard OS Appearance v1, hosted layer (@wizard/ui v1 — vendored, to be extracted later). WIZARD_APPEARANCE_CSS_V1
+ * Applies only inside a Wizard shell that sent a valid appearance context (html[data-wz-hosted], set by
+ * wizard-appearance.js). Standalone Wisdom is untouched and paints its own base.
+ * Rule (wizard-os spec/APPEARANCE.md): the canvas is transparent and Wisdom sits on the shell's window glass; bars use
+ * the chrome material, sheets the overlay material, cards/inputs ink surfaces, ink and hairlines follow the skin.
+ * Wisdom KEEPS its own gold accent, its serif type, its layouts and its portrait/photo treatments (white type over a dark
+ * shade only where there is art). Where there is no art, an accent glow on the glass replaces the black plate. */
+:root[data-wz-hosted]{
+ --bg:var(--wz-base)!important;--surface:var(--wz-surface)!important;--raised:var(--wz-surface-raised)!important;
+ --ink:var(--wz-text)!important;--ink2:var(--wz-text-secondary)!important;--muted:var(--wz-text-muted)!important;
+ --line:var(--wz-border)!important;--line-strong:var(--wz-border)!important;--media-line:var(--wz-border)!important;
+ --hover:color-mix(in srgb,var(--wz-text) 3%,transparent)!important;--press:color-mix(in srgb,var(--wz-text) 9%,transparent)!important;
+ --wb-paper:var(--wz-reader-surface)!important;
+ --wb-ink:var(--wz-text)!important;--wb-ink2:var(--wz-text-secondary)!important;--wb-mute:var(--wz-text-muted)!important;
+ /* accent, --accent-ink, --accent-soft and --wb-gold stay Wisdom's own */
+ --wb-card:var(--wz-surface);--wb-card-press:var(--wz-surface-raised);--wb-edge:var(--wz-border);
+ --wb-track:color-mix(in srgb,var(--wz-text) 14%,transparent);
+ --wb-noart:radial-gradient(120% 80% at 30% 20%,color-mix(in srgb,var(--wb-gold) 22%,transparent),color-mix(in srgb,var(--wz-text) 4%,transparent) 70%);
+ --wb-initial:radial-gradient(120% 90% at 30% 15%,color-mix(in srgb,var(--wb-gold) 28%,transparent),color-mix(in srgb,var(--wz-text) 5%,transparent) 70%);
+ --wb-request:radial-gradient(130% 160% at 0 0,color-mix(in srgb,var(--wb-gold) 14%,transparent),var(--wz-surface) 70%);
+ --wb-hero-end:var(--wz-chrome);
+ --wz-bar:color-mix(in srgb,var(--wz-chrome) 70%,transparent);
+}
+:root[data-wz-hosted][data-color-scheme="light"]{--wb-hero-end:rgba(8,7,6,.94)}
+
+/* Canvas: transparent; the shell's window material shows through. */
+html[data-wz-hosted],html[data-wz-hosted] body,html[data-wz-hosted] #app,html[data-wz-hosted] .w-layout{background:var(--wz-canvas)}
+
+/* Bars: the window material at ~70% with a blur. Sheets: the overlay material. Inputs: ink surfaces. */
+html[data-wz-hosted] .wisdom-views,html[data-wz-hosted] .topbar,html[data-wz-hosted] .nav{background:var(--wz-bar);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px)}
+html[data-wz-hosted] .sheet{background:var(--wz-overlay);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+html[data-wz-hosted] :is(input,textarea,select){background:var(--wz-surface)}
+html[data-wz-hosted] .wisdom-thinker-chip.prioritized .avatar{box-shadow:0 0 0 2px var(--wz-border),0 0 0 4px var(--accent)}
+
+/* No art: accent glow on the glass, never a black plate. Art containers fall back to a raised surface. */
+html[data-wz-hosted] .wb-noart{background:var(--wb-noart)}
+html[data-wz-hosted] .wb-initial{background:var(--wb-initial);color:color-mix(in srgb,var(--wb-gold) 70%,var(--wz-text))}
+html[data-wz-hosted] :is(.wb-cover-art,.wb-ep-art,.wb-res-art,.wb-reading-art){background:var(--wz-surface-raised)}
+html[data-wz-hosted] .wb-mosaic{background:var(--wz-border)}
+html[data-wz-hosted] .wb-opener:has(.wb-noart),html[data-wz-hosted] .wb-hero:has(.wb-noart),html[data-wz-hosted] .wb-book-hero:has(.wb-noart){color:var(--wz-text)}
+html[data-wz-hosted] .wb-opener:has(.wb-noart) .wb-noart{position:absolute;inset:0;width:100%;height:100%}
+html[data-wz-hosted] :is(.wb-opener,.wb-hero,.wb-book-hero):has(.wb-noart) .wb-hero-shade{display:none}
+html[data-wz-hosted] .wb-hero:has(.wb-noart){background:var(--wb-card);box-shadow:none;border:1px solid var(--wb-edge)}
+html[data-wz-hosted] .wb-opener:has(.wb-noart) .wb-opener-copy p,html[data-wz-hosted] .wb-hero:has(.wb-noart) .wb-hero-deck,html[data-wz-hosted] .wb-book-hero:has(.wb-noart) :is(.wb-book-copy p,.wb-book-copy h1 span){color:var(--wz-text-secondary)}
+html[data-wz-hosted] .wb-opener:has(.wb-noart) .wb-swipe,html[data-wz-hosted] .wb-hero:has(.wb-noart) .wb-hero-foot,html[data-wz-hosted] .wb-book-hero:has(.wb-noart) .wb-book-stats{color:var(--wz-text-muted)}
+html[data-wz-hosted] .wb-hero:has(.wb-noart) .wb-pill{background:var(--accent);color:var(--accent-ink)}
+html[data-wz-hosted] .wb-book-hero .wb-hero-shade{background:linear-gradient(180deg,rgba(13,12,11,.25),rgba(13,12,11,0) 25%,rgba(13,12,11,.75) 58%,var(--wb-hero-end) 100%)}
+
+/* Cards on the glass: ink surfaces and skin hairlines instead of near-black plates. */
+html[data-wz-hosted] :is(.wb-reading-row,.wb-search-field,.wb-rate,.wb-finished,.wb-dive,.wb-browse-card,.wb-lib-tile){background:var(--wb-card);border-color:var(--wb-edge)}
+html[data-wz-hosted] :is(.wb-reading-row,.wb-res,.wb-request-btn,.wb-browse-card,.wb-lib-tile):active{background:var(--wb-card-press)}
+html[data-wz-hosted] :is(.wb-request-btn,.wb-more){background:var(--wb-request);border-color:var(--wb-edge)}
+html[data-wz-hosted] :is(.wb-thumb,.wb-thumb-btn,.wb-deeper){border-color:var(--wb-edge)}
+html[data-wz-hosted] .wb-thumb.on{border-color:var(--wb-gold)}
+html[data-wz-hosted] :is(.wb-primary.is-done,.wb-primary:disabled,.wb-dive-tick){background:var(--wb-card)}
+html[data-wz-hosted] :is(.wb-bar,.wb-reading-bar){background:var(--wb-track)}
+html[data-wz-hosted] .wb-reader[data-at="opener"] .wb-bar{background:rgba(255,255,255,.18)}
+html[data-wz-hosted] .wb-col-minds a{border-bottom-color:var(--wb-edge)}
+html[data-wz-hosted] .wb-more-tile{background:var(--wz-surface);border-color:var(--wb-edge)}
+
+/* Ink that was hard white on a dark page follows the skin (art keeps white type over its shade). */
+html[data-wz-hosted] :is(.wb-flow strong,.wb-flow .wb-keyline,.wb-end .wb-end-head h2,.wb-more strong,.wb-dive-copy strong,.wb-fin-copy strong){color:var(--wz-text)}
+html[data-wz-hosted] .wb-flow .wb-keyline{border-color:var(--wb-edge)}
+
+/* Reader: Wisdom's reading surface (transparent today), round controls and pop-overs on the shell's materials. */
+html[data-wz-hosted] .wb-reader[data-at="text"] .wb-top,html[data-wz-hosted] .wb-reader[data-at="end"] .wb-top{background:linear-gradient(180deg,var(--wb-paper) 70%,transparent)}
+html[data-wz-hosted] .wb-epigraph{background:radial-gradient(120% 70% at 50% 40%,color-mix(in srgb,var(--wb-gold) 9%,transparent),transparent 70%)}
+html[data-wz-hosted] .wb-round{background:var(--wz-overlay);color:var(--wz-text)}
+html[data-wz-hosted] .wb-reader[data-at="opener"] .wb-round{background:rgba(20,18,16,.55);color:#f3ede3}
+html[data-wz-hosted] .wb-reader[data-at="opener"]:has(.wb-opener .wb-noart) .wb-round{background:var(--wz-overlay);color:var(--wz-text)}
+html[data-wz-hosted] :is(.wb-hlpop,.wb-glosspop){background:var(--wz-overlay);border-color:var(--wb-edge);color:var(--wz-text);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+/* Explanations overlay prose: composite the skin material over an opaque base. */
+html[data-wz-hosted] .wb-glosspop{background:linear-gradient(var(--wz-overlay),var(--wz-overlay)),var(--wz-base,var(--surface,#17131f));-webkit-backdrop-filter:none;backdrop-filter:none}
+html[data-wz-hosted] .wb-hlpop button:not([hidden])~button:not([hidden])::before{background:var(--wb-edge)}
+html[data-wz-hosted] .wb-sheet-card{background:var(--wz-overlay);color:var(--wz-text);-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-filter:blur(22px) saturate(1.2)}
+html[data-wz-hosted] .wb-sheet-card textarea{background:var(--wz-surface);border-color:var(--wb-edge)}
+html[data-wz-hosted] .wb-book-hero:has(.wb-noart) .wb-book-copy small{text-shadow:none}

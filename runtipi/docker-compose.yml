@@ -1,0 +1,32 @@
+services:
+  wisdom:
+    image: ghcr.io/humanitylabs-org/wisdom:0.4.0-private.24
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETUID, SETGID]
+    security_opt: ['no-new-privileges:true']
+    read_only: true
+    mem_limit: 512m
+    tmpfs: [/tmp]
+    environment:
+      WISDOM_BASE: ''
+      WISDOM_CONTAINER: '1'
+      WISDOM_PORT: '9200'
+      WISDOM_DATA: /data
+      WISDOM_LIBRARY: /media/Wisdom
+      WISDOM_ADMIT: disabled
+      WISDOM_WIZARD_ORIGIN: ''
+      WISDOM_TIMEZONE: ${WISDOM_TIMEZONE:-UTC}
+      WISDOM_ORIGINS: ${WISDOM_ORIGINS:-}
+      WISDOM_COLLECTION_SOURCE: ${WISDOM_COLLECTION_SOURCE:-}
+      WISDOM_DISCUSS_URL: ${WISDOM_DISCUSS_URL:-}
+      WISDOM_DISCUSS_TOKEN: ${WISDOM_DISCUSS_TOKEN:-}
+    volumes:
+      - ${APP_DATA_DIR}/data:/data
+      - ${ROOT_FOLDER_HOST}/media/Wisdom:/media/Wisdom
+      - ${APP_DATA_DIR}/sources:/sources:ro
+    x-runtipi:
+      is_main: true
+      internal_port: 9200
+x-runtipi:
+  schema_version: 2
+  overrides: []

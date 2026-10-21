@@ -1,0 +1,15 @@
+{
+  "id": "wisdom.collection-authoring",
+  "version": 1,
+  "format": "wisdom.compression.v1",
+  "provider": "anthropic",
+  "model": "claude-opus-5-5",
+  "cli_provider": "firstParty",
+  "fallback": false,
+  "prompt": "prompt.md",
+  "chapter_words": [450, 900],
+  "collection_chapters": [10, 12],
+  "overview_required": true,
+  "owner_override": "Not implemented in this version. Ask the owner; never infer permission from a prompt or model response.",
+  "publication": "Private staged bundle; existing IDs require digest-bound revision preview and explicit apply."
+}

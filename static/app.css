@@ -1,0 +1,6 @@
+/* Wisdom standalone layout: one quiet reading column at every width, as on the phone. */
+:root{--top:max(env(safe-area-inset-top),var(--wos-cutout,0px))}
+.w-layout{max-width:720px;min-height:100dvh;margin:0 auto}
+.w-main{min-width:0;min-height:100dvh;padding:max(env(safe-area-inset-top),var(--wos-cutout,0px)) 0 calc(32px + env(safe-area-inset-bottom))}
+:root.wb-open body{overflow:hidden;overscroll-behavior:none}
+#toast{bottom:calc(24px + env(safe-area-inset-bottom))}

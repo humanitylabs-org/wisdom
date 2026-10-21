@@ -1,0 +1,15 @@
+name: Source checks (builds run on Thales)
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m compileall -q server.py starter.py library.py wisdom.py mcp_api.py
+      - run: python3 tools/check_view.py
+# Release images are built and verified on the designated private worker.
+# No public registry publication or owner-content upload from hosted CI.
