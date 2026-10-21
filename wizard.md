@@ -13,6 +13,7 @@ runtime:
   kind: runtipi
   config: runtipi/config.json
   compose: runtipi/docker-compose.yml
+  package: source
 api:
   port: 9200
   path: /api
