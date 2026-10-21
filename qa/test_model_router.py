@@ -61,6 +61,17 @@ class RouterTransport(unittest.TestCase):
             r.request('ask-ai', self.payload, 2)
         self.assertEqual(caught.exception.code, 'needs_owner')
         self.assertEqual(str(caught.exception), 'Connect a model to use Ask AI')
+        with self.assertRaises(r.Fault) as caught:
+            r.request('look-up', self.payload, 2)
+        self.assertEqual(caught.exception.code, 'needs_owner')
+        self.assertEqual(str(caught.exception), 'Connect a model to use Look up')
+
+    def test_streamed_needs_owner_names_feature(self):
+        self.events = [{'type': 'error', 'code': 'needs_owner'}]
+        with self.assertRaises(r.Fault) as caught, r.request('look-up', self.payload, 2) as response:
+            list(response)
+        self.assertEqual(caught.exception.code, 'needs_owner')
+        self.assertEqual(str(caught.exception), 'Connect a model to use Look up')
 
     def test_wrong_effective_model_and_missing_done(self):
         for events in [[self.done('wrong')], [{'type':'delta','text':'unverified'}]]:
