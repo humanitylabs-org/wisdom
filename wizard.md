@@ -4,6 +4,7 @@ id: wisdom
 name: Wisdom
 type: service
 category: app
+voice_names: ["reader", "wisdom reader", "wizard reader", "collections"]
 version: 0.4.0-private.24
 summary: Deep reader for imported collections, with highlights, glosses, documented API and MCP.
 license: MIT
