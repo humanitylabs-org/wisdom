@@ -11,14 +11,16 @@ import urllib.request
 
 PINS = {'ask-ai': 'claude-sonnet-5', 'look-up': 'claude-haiku-4-5'}
 FIX = '/wizard-os-home/?open=wizard-connection-router'
+LABELS = {'ask-ai': 'Ask AI', 'look-up': 'Look up'}
 
 
 class Fault(ValueError):
-    def __init__(self, code='unreachable', fix_url=FIX):
+    def __init__(self, code='unreachable', fix_url=FIX, feature='ask-ai'):
         self.code = code
+        self.feature = feature
         # Only same-origin relative shell links are allowed to leave this server.
         self.fix_url = fix_url if isinstance(fix_url, str) and fix_url.startswith('/') and not fix_url.startswith('//') and not any(c in fix_url for c in ('\\', '\r', '\n')) else FIX
-        super().__init__('Connect a model to use Ask AI' if code == 'needs_owner' else 'The model connection is unavailable. Your question is kept.')
+        super().__init__(f'Connect a model to use {LABELS.get(feature, "Ask AI")}' if code == 'needs_owner' else 'The model connection is unavailable. Your question is kept.')
 
     def public(self):
         return {'code': self.code, 'message': str(self), 'fix_url': self.fix_url}
@@ -52,7 +54,7 @@ HTTP = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect()
 
 def request(feature, payload, timeout):
     if not configured():
-        raise Fault('needs_owner')
+        raise Fault('needs_owner', feature=feature)
     # Keep the broker's sealed evidence and user history byte-for-byte as data.
     context = {k: payload[k] for k in ('quote', 'sources', 'source_links_not_read', 'messages')}
     if feature == 'look-up':
@@ -69,7 +71,7 @@ def request(feature, payload, timeout):
     except urllib.error.HTTPError as exc:
         try:
             error = json.loads(exc.read(8192))
-            raise Fault(error.get('code', 'provider_error'), error.get('fix_url', FIX)) from None
+            raise Fault(error.get('code', 'provider_error'), error.get('fix_url', FIX), feature) from None
         except (json.JSONDecodeError, AttributeError):
             raise Fault('provider_error') from None
         finally:
@@ -113,7 +115,7 @@ class Response:
                 if data:
                     event = json.loads('\n'.join(data))
                     if event.get('type') == 'error':
-                        raise Fault(event.get('code', 'provider_error'), event.get('fix_url', FIX))
+                        raise Fault(event.get('code', 'provider_error'), event.get('fix_url', FIX), self.feature)
                     if event.get('type') in ('text', 'delta'):
                         if not isinstance(event.get('text'), str):
                             raise Fault('provider_error')
