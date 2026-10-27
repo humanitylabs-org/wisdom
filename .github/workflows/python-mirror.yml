@@ -1,0 +1,91 @@
+name: Mirror public Python base
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/python-mirror.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+# No build, owner files, app source image, or persistent worker is involved.
+env:
+  SOURCE: docker.io/library/python@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+  TARGET: ghcr.io/humanitylabs-org/mirror-python:3.12-slim
+  DIGEST: sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+jobs:
+  mirror:
+    if: >-
+      github.repository == 'humanitylabs-org/wisdom' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest qa.test_base_mirror -v
+      - run: sudo apt-get update -qq && sudo apt-get install -y skopeo
+      - name: Copy every upstream manifest and layer without rebuilding or changing bytes
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+          GHCR_USER: ${{ github.actor }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          auth="$RUNNER_TEMP/python-mirror-auth.json"
+          trap 'rm -f "$auth"' EXIT
+          printf '%s' "$GHCR_TOKEN" | skopeo login --authfile "$auth" --username "$GHCR_USER" --password-stdin ghcr.io
+          skopeo inspect --raw "docker://$SOURCE" > "$RUNNER_TEMP/upstream-index.json"
+          test "sha256:$(sha256sum "$RUNNER_TEMP/upstream-index.json" | cut -d' ' -f1)" = "$DIGEST"
+          skopeo copy --all --preserve-digests --retry-times 3 --authfile "$auth" "docker://$SOURCE" "docker://$TARGET"
+          skopeo inspect --authfile "$auth" --raw "docker://$TARGET" > "$RUNNER_TEMP/mirror-index.json"
+          test "sha256:$(sha256sum "$RUNNER_TEMP/mirror-index.json" | cut -d' ' -f1)" = "$DIGEST"
+          diff -u "$RUNNER_TEMP/upstream-index.json" "$RUNNER_TEMP/mirror-index.json"
+          echo "Exact upstream index preserved: $DIGEST" >> "$GITHUB_STEP_SUMMARY"
+  verify:
+    needs: mirror
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions: {}
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - run: sudo apt-get update -qq && sudo apt-get install -y skopeo
+      - name: Pull the tag and exact digest anonymously on a fresh hosted daemon
+        env:
+          ARCH: ${{ matrix.arch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          clean=$(mktemp -d "$RUNNER_TEMP/python-anonymous.XXXXXX")
+          trap 'rm -rf "$clean"' EXIT
+          export HOME="$clean" DOCKER_CONFIG="$clean/docker"
+          mkdir -p "$DOCKER_CONFIG"
+          printf '{"auths":{}}\n' > "$DOCKER_CONFIG/config.json"
+          unset DOCKER_AUTH_CONFIG REGISTRY_AUTH_FILE GH_TOKEN GITHUB_TOKEN GHCR_TOKEN
+          image="${TARGET%:*}"
+          for ref in "$image@$DIGEST" "$TARGET"; do
+            pulled=false
+            for attempt in 1 2 3 4 5; do
+              if docker pull --platform "linux/$ARCH" "$ref"; then pulled=true; break; fi
+              sleep 10
+            done
+            test "$pulled" = true
+            skopeo inspect --raw "docker://$ref" > "$clean/index.json"
+            test "sha256:$(sha256sum "$clean/index.json" | cut -d' ' -f1)" = "$DIGEST"
+            # --platform inspection is available with containerd, not classic stores.
+            if docker info -f '{{json .DriverStatus}}' | grep -q io.containerd.snapshotter; then
+              actual=$(docker image inspect --platform "linux/$ARCH" "$ref" -f '{{.Os}}/{{.Architecture}}')
+            else
+              actual=$(docker image inspect "$ref" -f '{{.Os}}/{{.Architecture}}')
+            fi
+            test "$actual" = "linux/$ARCH"
+            docker image rm "$ref"
+            echo "Anonymous pull verified: $ref linux/$ARCH" >> "$GITHUB_STEP_SUMMARY"
+          done
