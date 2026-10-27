@@ -15,6 +15,25 @@ class BaseMirror(unittest.TestCase):
         self.assertIn('sha256sum', workflow)
         self.assertIn('diff -u', workflow)
 
+    def test_wisdom_installs_without_docker_hub(self):
+        compose = (ROOT / 'runtipi/docker-compose.yml').read_text()
+        dockerfile = (ROOT / 'Dockerfile').read_text()
+        image = 'ghcr.io/humanitylabs-org/mirror-python:3.12-slim@' + DIGEST
+        self.assertIn('image: ' + image, compose)
+        self.assertIn('FROM ' + image, dockerfile)
+        self.assertNotIn('image: python:', compose)
+        self.assertNotIn('FROM python:', dockerfile)
+
+    def test_source_package_and_storage_are_unchanged(self):
+        compose = (ROOT / 'runtipi/docker-compose.yml').read_text()
+        manifest = (ROOT / 'wizard.md').read_text()
+        self.assertIn('package: source', manifest)
+        self.assertIn('compose: runtipi/docker-compose.yml', manifest)
+        self.assertIn('${APP_SOURCE_DIR}:/app:ro', compose)
+        self.assertIn('${APP_DATA_DIR}/data:/data', compose)
+        self.assertIn('${ROOT_FOLDER_HOST}/media/Wisdom:/media/Wisdom', compose)
+        self.assertIn('command: [python, start.py]', compose)
+
     def test_only_canonical_main_can_publish(self):
         workflow = (ROOT / '.github/workflows/python-mirror.yml').read_text()
         publisher = workflow.split('  verify:')[0]
