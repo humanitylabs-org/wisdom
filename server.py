@@ -182,7 +182,10 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header('Content-Type', ctype)
         self.send_header('Content-Length', str(len(raw)))
-        self.send_header('Cache-Control', 'no-store')
+        # One Cache-Control only: a caller's own (art, fonts) replaces the default instead of adding to it, since a
+        # browser that sees both obeys no-store and re-downloads every picture on every visit.
+        if not any(k.lower() == 'cache-control' for k in (headers or {})):
+            self.send_header('Cache-Control', 'no-store')
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('X-Robots-Tag', 'noindex, nofollow')
         self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
@@ -255,7 +258,7 @@ class Handler(BaseHTTPRequestHandler):
                 with library.LOCK, db() as c:
                     raw = library.art(c, m[1], m[2])
                 if raw is not None:
-                    return self.send(200, raw, 'image/jpeg')
+                    return self.send(200, raw, 'image/jpeg', {'Cache-Control': 'private, max-age=86400'})
                 return self.send(404, {'error': 'Not found'})
             file = ROOT / 'static/wisdom-art' / m[1] / f'{m[2]}.{m[3]}'
             if not file.is_file():
