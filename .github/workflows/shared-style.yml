@@ -14,3 +14,4 @@ jobs:
         with:
           persist-credentials: false
       - run: python3 -m unittest discover -s tests -p test_shared_style.py -v
+      - run: node --test tests/shared-links.test.cjs

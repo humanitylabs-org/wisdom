@@ -32,7 +32,7 @@ const Wisdom = (() => {
   saveOpenRoute();
  }
  const active=()=>route==='wisdom';
- const link=(path,text,cls='')=>`<a class="${cls}${/\b(?:btn|wb-primary|wb-quiet)\b/.test(cls)?' wz-button'+(/wb-quiet/.test(cls)?' secondary':''):''}" href="#${path||'/'}" data-wisdom-route="${esc(path)}">${text}</a>`;
+ const link=(path,text,cls='')=>`<a class="${cls}${/\b(?:btn|wb-primary|wb-quiet)\b/.test(cls)?' wz-button'+(/wb-quiet/.test(cls)?' secondary':''):''}" href="#${esc(path||'/')}" data-wisdom-route="${esc(path)}">${text}</a>`;
  const thinker=e=>data.thinkers.find(t=>t.id===e.thinker);
  const label=e=>e.label||(e.part?`Part ${e.part}`:'Overview');
  const pubIcon=t=>avatar({name:t.name});
