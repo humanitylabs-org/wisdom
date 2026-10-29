@@ -14,7 +14,7 @@
 .wd-quote summary{font-size:var(--wz-text-sm);color:var(--wd-muted);cursor:pointer;min-height:32px;display:list-item;list-style-position:inside;line-height:32px}
 .wd-quote blockquote{font:400 var(--wz-text-lg)/1.55 var(--wb-text,Georgia,serif);white-space:pre-wrap;overflow-wrap:anywhere;max-height:112px;overflow:auto;padding-bottom:5px}
 .wd-eyebrow{font-size:var(--wz-text-sm);font-weight:700;letter-spacing:.13em;color:var(--wd-accent)}
-.wd-empty h3{font:400 var(--wz-text-title)/1.25 var(--wb-text,Georgia,serif);letter-spacing:-.025em;margin:7px 0 10px}
+.wd-empty h3{font:400 calc(var(--wz-text-title) * 24 / 26)/1.25 var(--wb-text,Georgia,serif);letter-spacing:-.025em;margin:7px 0 10px}
 .wd-notice{font-size:var(--wz-text-sm);line-height:1.6;background:var(--wd-raised);padding:12px 14px;border-radius:12px;margin-bottom:16px}
 .wd-notice p+p{margin-top:8px}
 .wd-text-button{color:var(--wd-accent)!important;text-decoration:underline;text-underline-offset:3px;min-height:44px;padding:8px 0;text-align:left;font-size:var(--wz-text-sm)!important}
@@ -37,7 +37,7 @@ html[data-skin="signal"] .wd-connect{border-radius:2px;font-family:var(--wz-font
 .wd-thread-row{display:block;width:100%;text-align:left;padding:16px 0;border-bottom:1px solid var(--wd-border)!important}
 .wd-thread-row:first-child{padding-top:0}
 .wd-row-chapter{display:block;font-size:var(--wz-text-sm);font-weight:650;color:var(--wd-accent);margin-bottom:8px}
-.wd-thread-row blockquote{font:400 var(--wz-text-heading)/1.5 var(--wb-text,Georgia,serif);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.wd-thread-row blockquote{font:400 calc(var(--wz-text-heading) * 18 / 17)/1.5 var(--wb-text,Georgia,serif);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .wd-row-preview{font-size:var(--wz-text-sm);color:var(--wd-muted);margin-top:9px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wd-row-meta{display:block;font-size:var(--wz-text-sm);color:var(--wd-muted);margin-top:10px}
 .wd-list-message{color:var(--wd-muted);padding:12px 0;font-size:var(--wz-text-md)}
@@ -71,14 +71,14 @@ html[data-skin="signal"] .wd-connect{border-radius:2px;font-family:var(--wz-font
 .wd-empty p{color:var(--wd-muted);font-size:var(--wz-text-md);line-height:1.5}
 .wd-starters{display:flex;gap:8px;margin:12px -20px 0;padding:0 20px;overflow-x:auto;scrollbar-width:none}
 .wd-starters::-webkit-scrollbar{display:none}
-.wd-chip{flex:none;border:1px solid color-mix(in srgb,var(--wd-text) 12%,transparent)!important;background:color-mix(in srgb,var(--wd-text) 6%,transparent)!important;border-radius:999px;padding:0 15px;font-size:var(--wz-text-md)!important;font-weight:500;min-height:38px;white-space:nowrap;transition:background .15s ease,border-color .15s ease}
+.wd-chip{flex:none;border:1px solid color-mix(in srgb,var(--wd-text) 12%,transparent)!important;background:color-mix(in srgb,var(--wd-text) 6%,transparent)!important;border-radius:999px;padding:0 15px;font-size:calc(var(--wz-text-heading) * 13.5 / 17)!important;font-weight:500;min-height:38px;white-space:nowrap;transition:background .15s ease,border-color .15s ease}
 .wd-chip:hover,.wd-chip:active{background:var(--wd-soft)!important;border-color:color-mix(in srgb,var(--wd-accent) 45%,transparent)!important}
 .wd-messages{display:flex;flex-direction:column;gap:18px;padding-top:4px}
 .wd-message{overflow-wrap:anywhere}
 .wd-user{align-self:flex-end;max-width:86%;padding:10px 15px;background:var(--wd-soft);border-radius:20px 20px 6px 20px}
 .wd-user .wd-answer{line-height:1.5}
 .wd-assistant{padding-right:6px}
-.wd-answer{line-height:1.65;font-size:var(--wz-text-lg);white-space:normal}
+.wd-answer{line-height:1.65;font-size:calc(var(--wz-text-heading) * 15.5 / 17);white-space:normal}
 .wd-footer{flex:none;padding:6px 12px max(12px,env(safe-area-inset-bottom));background:transparent}
 .wd-composer{display:flex;align-items:flex-end;gap:4px;padding:5px;border:1px solid color-mix(in srgb,var(--wd-text) 13%,transparent);border-radius:26px;background:color-mix(in srgb,var(--wd-text) 7%,transparent);transition:border-color .15s ease,background .15s ease}
 .wd-composer:focus-within{border-color:color-mix(in srgb,var(--wd-accent) 60%,transparent);background:color-mix(in srgb,var(--wd-text) 9%,transparent)}

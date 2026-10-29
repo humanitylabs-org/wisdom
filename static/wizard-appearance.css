@@ -21,14 +21,14 @@
  --wb-hero-end:var(--wz-chrome);
  --wz-bar:color-mix(in srgb,var(--wz-chrome) 70%,transparent);
 }
-:root[data-wz-hosted][data-color-scheme="light"]{--wb-hero-end:color-mix(in srgb, var(--wz-base) 94%, transparent)}
+:root[data-wz-hosted][data-color-scheme="light"]{--wb-hero-end:rgba(8,7,6,.94)}
 
 /* Canvas: transparent; the shell's window material shows through. */
 html[data-wz-hosted],html[data-wz-hosted] body,html[data-wz-hosted] #app,html[data-wz-hosted] .w-layout{background:var(--wz-canvas)}
 
 /* Bars: the window material at ~70% with a blur. Sheets: the overlay material. Inputs: ink surfaces. */
-html[data-wz-hosted] .wisdom-views,html[data-wz-hosted] .topbar,html[data-wz-hosted] .nav{background:var(--wz-bar);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px)}
-html[data-wz-hosted] .sheet{background:var(--wz-overlay);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+html[data-wz-hosted] .wisdom-views,html[data-wz-hosted] .topbar,html[data-wz-hosted] .nav{background:var(--wz-panel);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px)}
+html[data-wz-hosted] .sheet{background:var(--wz-panel);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 html[data-wz-hosted] :is(input,textarea,select){background:var(--wz-surface)}
 html[data-wz-hosted] .wisdom-thinker-chip.prioritized .avatar{box-shadow:0 0 0 2px var(--wz-border),0 0 0 4px var(--accent)}
 
@@ -44,7 +44,7 @@ html[data-wz-hosted] .wb-hero:has(.wb-noart){background:var(--wb-card);box-shado
 html[data-wz-hosted] .wb-opener:has(.wb-noart) .wb-opener-copy p,html[data-wz-hosted] .wb-hero:has(.wb-noart) .wb-hero-deck,html[data-wz-hosted] .wb-book-hero:has(.wb-noart) :is(.wb-book-copy p,.wb-book-copy h1 span){color:var(--wz-text-secondary)}
 html[data-wz-hosted] .wb-opener:has(.wb-noart) .wb-swipe,html[data-wz-hosted] .wb-hero:has(.wb-noart) .wb-hero-foot,html[data-wz-hosted] .wb-book-hero:has(.wb-noart) .wb-book-stats{color:var(--wz-text-muted)}
 html[data-wz-hosted] .wb-hero:has(.wb-noart) .wb-pill{background:var(--accent);color:var(--accent-ink)}
-html[data-wz-hosted] .wb-book-hero .wb-hero-shade{background:linear-gradient(180deg,color-mix(in srgb, var(--wz-base) 25%, transparent),color-mix(in srgb, var(--wz-base) 0%, transparent) 25%,color-mix(in srgb, var(--wz-base) 75%, transparent) 58%,var(--wb-hero-end) 100%)}
+html[data-wz-hosted] .wb-book-hero .wb-hero-shade{background:linear-gradient(180deg,rgba(13,12,11,.25),rgba(13,12,11,0) 25%,rgba(13,12,11,.75) 58%,var(--wb-hero-end) 100%)}
 
 /* Cards on the glass: ink surfaces and skin hairlines instead of near-black plates. */
 html[data-wz-hosted] :is(.wb-reading-row,.wb-search-field,.wb-rate,.wb-finished,.wb-dive,.wb-browse-card,.wb-lib-tile){background:var(--wb-card);border-color:var(--wb-edge)}
@@ -54,7 +54,7 @@ html[data-wz-hosted] :is(.wb-thumb,.wb-thumb-btn,.wb-deeper){border-color:var(--
 html[data-wz-hosted] .wb-thumb.on{border-color:var(--wb-gold)}
 html[data-wz-hosted] :is(.wb-primary.is-done,.wb-primary:disabled,.wb-dive-tick){background:var(--wb-card)}
 html[data-wz-hosted] :is(.wb-bar,.wb-reading-bar){background:var(--wb-track)}
-html[data-wz-hosted] .wb-reader[data-at="opener"] .wb-bar{background:color-mix(in srgb, var(--wz-text) 18%, transparent)}
+html[data-wz-hosted] .wb-reader[data-at="opener"] .wb-bar{background:rgba(255,255,255,.18)}
 html[data-wz-hosted] .wb-col-minds a{border-bottom-color:var(--wb-edge)}
 html[data-wz-hosted] .wb-more-tile{background:var(--wz-surface);border-color:var(--wb-edge)}
 
@@ -65,13 +65,13 @@ html[data-wz-hosted] .wb-flow .wb-keyline{border-color:var(--wb-edge)}
 /* Reader: Wisdom's reading surface (transparent today), round controls and pop-overs on the shell's materials. */
 html[data-wz-hosted] .wb-reader[data-at="text"] .wb-top,html[data-wz-hosted] .wb-reader[data-at="end"] .wb-top{background:linear-gradient(180deg,var(--wb-paper) 70%,transparent)}
 html[data-wz-hosted] .wb-epigraph{background:radial-gradient(120% 70% at 50% 40%,color-mix(in srgb,var(--wb-gold) 9%,transparent),transparent 70%)}
-html[data-wz-hosted] .wb-round{background:var(--wz-overlay);color:var(--wz-text)}
-html[data-wz-hosted] .wb-reader[data-at="opener"] .wb-round{background:color-mix(in srgb, var(--wz-base) 55%, transparent);color:var(--wz-warning)}
-html[data-wz-hosted] .wb-reader[data-at="opener"]:has(.wb-opener .wb-noart) .wb-round{background:var(--wz-overlay);color:var(--wz-text)}
-html[data-wz-hosted] :is(.wb-hlpop,.wb-glosspop){background:var(--wz-overlay);border-color:var(--wb-edge);color:var(--wz-text);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+html[data-wz-hosted] .wb-round{background:var(--wz-panel);color:var(--wz-text)}
+html[data-wz-hosted] .wb-reader[data-at="opener"] .wb-round{background:var(--wz-panel);color:var(--wz-text)}
+html[data-wz-hosted] .wb-reader[data-at="opener"]:has(.wb-opener .wb-noart) .wb-round{background:var(--wz-panel);color:var(--wz-text)}
+html[data-wz-hosted] :is(.wb-hlpop,.wb-glosspop){background:var(--wz-panel);border-color:var(--wb-edge);color:var(--wz-text);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 /* Explanations overlay prose: composite the skin material over an opaque base. */
 html[data-wz-hosted] .wb-glosspop{background:linear-gradient(var(--wz-overlay),var(--wz-overlay)),var(--wz-base,var(--surface,var(--wz-base)));-webkit-backdrop-filter:none;backdrop-filter:none}
 html[data-wz-hosted] .wb-hlpop button:not([hidden])~button:not([hidden])::before{background:var(--wb-edge)}
-html[data-wz-hosted] .wb-sheet-card{background:var(--wz-overlay);color:var(--wz-text);-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-filter:blur(22px) saturate(1.2)}
+html[data-wz-hosted] .wb-sheet-card{background:var(--wz-panel);color:var(--wz-text);-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-filter:blur(22px) saturate(1.2)}
 html[data-wz-hosted] .wb-sheet-card textarea{background:var(--wz-surface);border-color:var(--wb-edge)}
 html[data-wz-hosted] .wb-book-hero:has(.wb-noart) .wb-book-copy small{text-shadow:none}
