@@ -128,6 +128,56 @@ def state(c,day=None):
  fresh_marks(d)
  return dict(d,request_enabled=os.environ.get('WISDOM_ADMIT')=='live' and bool(os.environ.get('WISDOM_WIZARD_ORIGIN')),picks=orders['to-read'][:3],orders=orders,preferences=preferences,day=day,timezone=os.environ.get('WISDOM_TIMEZONE','UTC'),notices=d.get('_notices',[]),highlights=highlights(c),glosses=glosses(d['entries']),requests=requests(c))
 
+# Wizard OS inbox feed (contract v1). Wisdom has no app badge; its one "needs you" thing is today's reading.
+# It is due from local midnight (WISDOM_TIMEZONE) until any reading activity today: a chapter marked read/done
+# or a saved reading position. State is the existing server-side reading tables, so the item drops out on
+# every device once the owner reads. Read-only; no new store.
+INBOX_PRIORITY=2
+
+def _today(now=None):
+ tz=ZoneInfo(os.environ.get('WISDOM_TIMEZONE','UTC'))
+ now=(now or dt.datetime.now(dt.timezone.utc)).astimezone(tz)
+ return now.date(),dt.datetime.combine(now.date(),dt.time(0),tz)
+
+def _since(value,start):
+ try:t=dt.datetime.fromisoformat(str(value).replace('Z','+00:00'))
+ except ValueError:return False
+ if t.tzinfo is None:t=t.replace(tzinfo=dt.timezone.utc)
+ return t>=start
+
+def read_today(c,now=None):
+ """True once the owner did any reading today (local day): marked a chapter read/done or saved a position."""
+ _,start=_today(now)
+ rows=[r[0] for r in c.execute('SELECT read_at FROM wisdom_reactions WHERE read=1 AND read_at IS NOT NULL')]
+ rows+=[r[0] for r in c.execute('SELECT updated_at FROM wisdom_positions')]
+ return any(_since(v,start) for v in rows)
+
+def inbox(c,now=None):
+ day,start=_today(now)
+ if read_today(c,now):return {'inbox':1,'items':[]}
+ s=state(c,day.isoformat())
+ byid={e['id']:e for e in s['entries']}
+ # Resume the chapter last opened and not finished; otherwise today's first pick (the Home hero).
+ started=sorted((e for e in s['entries'] if 0<e['progress']<100 and not e['read'] and not e['archived'] and e.get('opened_at')),key=lambda e:e['opened_at'],reverse=True)
+ e=started[0] if started else next((byid[i] for i in s['picks'] if i in byid),None)
+ if not e:return {'inbox':1,'items':[]}
+ names={t['id']:t.get('name') or '' for t in s['thinkers']}
+ cols={x['id']:x for x in s.get('collections',[])}
+ col=next((cols[i] for i in e.get('collections',[]) if i in cols),None)
+ lead='Continue: ' if started else ''
+ text=' · '.join(x for x in (lead+str(e.get('title') or 'Untitled'),names.get(e['thinker'],''),col['title'] if col and col.get('title') else '',f"{e['minutes']} min") if x)
+ return {'inbox':1,'items':[{'key':f'reading:{day.isoformat()}','title':"Today's reading",'text':text[:2000],
+  'time':int(start.timestamp()),'priority':INBOX_PRIORITY,'open':'#/read/'+e['id']+('/'+col['id'] if col else '')}]}
+
+INBOX_ACTIONS=()  # No server-side action: Open starts the reading; the inbox keeps Done/Snooze itself.
+
+def inbox_act(c,d,now=None):
+ if not isinstance(d,dict) or not set(d)<={'key','action','text'} or type(d.get('key')) is not str or type(d.get('action')) is not str or len(d['key'])>200:
+  raise ValueError('Send {key, action}')
+ if 'text' in d and type(d['text']) is not str:raise ValueError('text must be a string')
+ if d['action'] not in INBOX_ACTIONS:raise ValueError('Unknown action')
+ return {'ok':True}
+
 def glosses(entries):
  # Foreign phrases the reader underlines; tap one for romanisation, a sound-alike and the meaning
  # (James, 12 Oct). Only phrases that appear in a live chapter are sent.

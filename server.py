@@ -247,6 +247,9 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, out)
                 except ValueError as e:
                     return self.send(404, {'error': str(e)})
+        if path == '/api/inbox':
+            with library.LOCK, db() as c:
+                return self.send(200, wisdom.inbox(c))
         if path == '/api/wisdom/dives':
             with library.LOCK, db() as c:
                 return self.send(200, {'dives': wisdom.dives(c)})
@@ -373,6 +376,9 @@ class Handler(BaseHTTPRequestHandler):
                     return self.send(200, result)
             if path == '/api/wisdom/request':
                 return self.request_post(data)
+            if path == '/api/inbox/act':
+                with library.LOCK, db() as c:
+                    return self.send(200, wisdom.inbox_act(c, data))
             return self.send(404, {'error': 'Not found'})
         except OSError:
             return self.send(400, {'error': 'Collection files unavailable; no export or library change completed'})

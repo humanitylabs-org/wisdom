@@ -762,6 +762,65 @@
           }
         }
       }
+    },
+    "/api/inbox": {
+      "get": {
+        "summary": "Wizard OS inbox feed: today's reading until any reading activity today (contract v1)",
+        "responses": {
+          "200": {
+            "description": "{inbox:1, items:[{key,title,text,time,priority,open}]}"
+          },
+          "421": {
+            "description": "Unknown host"
+          }
+        }
+      }
+    },
+    "/api/inbox/act": {
+      "post": {
+        "summary": "Wizard OS inbox action. Wisdom offers no item actions (Open starts the reading), so every action id is unknown.",
+        "responses": {
+          "200": {
+            "description": "{ok:true}"
+          },
+          "400": {
+            "description": "Invalid payload or unknown action"
+          },
+          "403": {
+            "description": "Untrusted origin/host"
+          },
+          "415": {
+            "description": "JSON required"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "action": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "key",
+                  "action"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
