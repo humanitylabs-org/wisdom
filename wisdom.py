@@ -1,6 +1,6 @@
 """Evergreen editorial library. No collection, scoring API or paid dependency."""
 import datetime as dt
-import hashlib,json,math,re,os,sqlite3
+import copy,hashlib,json,math,re,os,sqlite3
 import library,contextlib
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -152,9 +152,27 @@ def read_today(c,now=None):
  rows+=[r[0] for r in c.execute('SELECT updated_at FROM wisdom_positions')]
  return any(_since(v,start) for v in rows)
 
+_INBOX_CACHE={}
+
+def _inbox_fingerprint(c,day):
+ # Everything the pick depends on: the local day, enabled bundle editions and personal reading state.
+ # Cheap small-table reads; the full state() decompresses every bundle (~250 ms on a real library).
+ h=hashlib.sha256(day.isoformat().encode())
+ for q in ('SELECT id,status,sha256 FROM wisdom_bundles ORDER BY id','SELECT * FROM wisdom_reactions ORDER BY id',
+           'SELECT * FROM wisdom_thinkers ORDER BY id','SELECT * FROM wisdom_positions ORDER BY id'):
+  h.update(json.dumps([tuple(r) for r in c.execute(q)],default=str).encode())
+ return h.hexdigest()
+
 def inbox(c,now=None):
  day,start=_today(now)
  if read_today(c,now):return {'inbox':1,'items':[]}
+ fp=_inbox_fingerprint(c,day)
+ if fp in _INBOX_CACHE:return copy.deepcopy(_INBOX_CACHE[fp])
+ out=_inbox_item(c,day,start)
+ _INBOX_CACHE.clear();_INBOX_CACHE[fp]=copy.deepcopy(out)
+ return out
+
+def _inbox_item(c,day,start):
  s=state(c,day.isoformat())
  byid={e['id']:e for e in s['entries']}
  # Resume the chapter last opened and not finished; otherwise today's first pick (the Home hero).

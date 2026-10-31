@@ -119,6 +119,19 @@ class Inbox(unittest.TestCase):
         t = time.perf_counter(); self.items()
         self.assertLess(time.perf_counter() - t, 0.2)
 
+    def test_unchanged_state_is_served_from_cache_and_changes_invalidate_it(self):
+        first = self.items()
+        with patch.object(wisdom, 'state', side_effect=AssertionError('full state rebuilt')):
+            self.assertEqual(self.items(), first)
+        self.assertEqual(self.call('/api/wisdom/reaction', {'kind': 'thinker', 'id': 'example-author', 'field': 'more', 'value': True})[0], 200)
+        calls = []
+        real = wisdom.state
+        with patch.object(wisdom, 'state', side_effect=lambda *a, **k: calls.append(1) or real(*a, **k)):
+            self.assertEqual(len(self.items()), 1)
+            self.assertEqual(calls, [1])  # preference changed: rebuilt once
+            self.items()
+        self.assertEqual(calls, [1])  # then cached again
+
     def test_openapi_documents_inbox_routes(self):
         paths = self.call('/openapi.json')[1]['paths']
         self.assertIn('get', paths['/api/inbox'])
