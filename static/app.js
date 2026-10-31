@@ -11,7 +11,7 @@ async function api(path,body,timeout=20000){let r=await fetch(new URL('api/'+pat
 // wisdom.js reads these names; in this app the route is always Wisdom.
 let route='wisdom',epoch=0;
 function render(){
- $('#app').innerHTML=`<div class="w-layout"><main class="w-main" id="content">${Wisdom.render()}${!location.hash||location.hash==='#'?'<footer class="wm-library-entry"><button class="wisdom-action" data-wisdom-discussions="">Discussions</button><a href="#/manage" data-wisdom-route="/manage">Manage collections</a></footer>':''}</main></div>`;
+ $('#app').innerHTML=`<div class="w-layout"><main class="w-main" id="content">${Wisdom.render()}${!location.hash||location.hash==='#'?'<footer class="wm-library-entry"><button class="wisdom-action wz-button secondary" data-wisdom-discussions="">Discussions</button><a href="#/manage" data-wisdom-route="/manage">Manage collections</a></footer>':''}</main></div>`;
  document.querySelectorAll('img').forEach(i=>i.onerror=()=>{i.style.display='none';const p=i.parentElement;if(p?.classList.contains('avatar'))p.textContent=p.dataset.initials||'?'});
  Wisdom.bind();CollectionManager.bind();
 }
