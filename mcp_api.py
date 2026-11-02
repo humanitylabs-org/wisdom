@@ -37,7 +37,7 @@ def dispatch(d):
         return 202, {}
     out = {'jsonrpc': '2.0', 'id': key}
     if method == 'initialize':
-        out['result'] = {'protocolVersion': '2025-03-26', 'capabilities': {'tools': {}}, 'serverInfo': {'name': 'wisdom', 'version': '0.4.0-private.24'}}
+        out['result'] = {'protocolVersion': '2025-03-26', 'capabilities': {'tools': {}}, 'serverInfo': {'name': 'wisdom', 'version': '0.4.0-private.25'}}
     elif method == 'ping':
         out['result'] = {}
     elif method == 'tools/list':
