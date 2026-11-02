@@ -21,7 +21,7 @@ ORIGINS = set(filter(None, os.environ.get('WISDOM_ORIGINS', '').split(',')))
 HOSTS = {urlsplit(o).netloc for o in ORIGINS}
 STATIC = {'discussions.js', 'discussions.css', 'index.html', 'app.js', 'wisdom.js', 'base.css', 'wisdom.css', 'collections.css', 'app.css',
           'icon.svg', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest', 'manage.js', 'manage.css',
-          'wizard-appearance.js', 'wizard-appearance.css'}
+          'wizard-appearance.js', 'wizard-appearance.css', 'wizard-tokens.css', 'wizard-ui.css', 'wizard-sheet.js'}
 # Collection requests are built by a real Archimedes run, admitted exactly like Wizard's own client does
 # (wizard-os-home live.js send()): create a wizard-mobile session, then start a run in it.
 # WISDOM_ADMIT=stub fakes admission (tests/QA never spawn builds); WISDOM_ADMIT=fail simulates an outage.

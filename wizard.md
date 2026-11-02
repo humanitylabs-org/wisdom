@@ -5,7 +5,7 @@ name: Wisdom
 type: service
 category: app
 voice_names: ["reader", "wisdom reader", "wizard reader", "collections", "jobs", "steve jobs"]
-version: 0.4.0-private.24
+version: 0.4.0-private.25
 summary: Deep reader for imported collections, with highlights, glosses, documented API and MCP.
 license: MIT
 source: .

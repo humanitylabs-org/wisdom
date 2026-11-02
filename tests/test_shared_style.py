@@ -41,4 +41,17 @@ class SharedStyle(unittest.TestCase):
         self.assertIn('wz-button', entry + scripts)
 
 
+    def test_every_local_asset_the_entrypoint_loads_is_served(self):
+        """index.html's own files must be in server.STATIC, or the reader gets a JSON 404 and loses the kit."""
+        import ast, re
+        tree = ast.parse((ROOT / 'server.py').read_text())
+        static = next(ast.literal_eval(n.value) for n in tree.body
+                      if isinstance(n, ast.Assign) and any(getattr(t, 'id', '') == 'STATIC' for t in n.targets))
+        entry = (WEB / 'index.html').read_text()
+        local = {u for u in re.findall(r'(?:href|src)="([^"]+)"', entry) if not re.match(r'(?:[a-z]+:|/|#)', u)}
+        self.assertTrue({'wizard-tokens.css', 'wizard-ui.css', 'wizard-sheet.js'} <= local)
+        self.assertEqual(sorted(local - static), [])
+        self.assertEqual(sorted(n for n in static if not (WEB / n).is_file()), [])
+
+
 if __name__ == '__main__': unittest.main()
