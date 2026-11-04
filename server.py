@@ -102,6 +102,92 @@ def admit(text, mode=None, seq=None):
     return sid, rid
 
 
+def open_discussion_thread(ident):
+    """Ask AI as the owner's real Wizard Chats thread: create (once) and return it with its first-turn item."""
+    if ADMIT != 'live' or not WIZARD_ORIGIN:
+        raise AdmissionError('Wizard Chats is not connected to Wisdom on this install.')
+    agent = discussions.THREAD_AGENT
+    from urllib.parse import urlencode
+    suffix = '?' + urlencode({'agent': agent}) if agent else ''
+    def lookup(sid, query=''):
+        try:
+            result = _wizard('GET', '/wizard/hermes/api/sessions/' + sid + query, None).get('session') or {}
+            if result.get('id') not in (None, sid):
+                raise AdmissionError('Wizard returned a different thread')
+            return result
+        except AdmissionError as e:
+            if 'HTTP 404' not in str(e):
+                raise
+            return None
+    # Serialize bind/migrate/admit. Persist identities BEFORE network writes, including a lost response.
+    with library.LOCK, discussions.LOCK, db() as c:
+        sid = discussions.session_of(c, ident)
+        route = c.execute('SELECT * FROM wisdom_discussion_chats WHERE thread_id=?', (ident,)).fetchone()
+        title = discussions.thread_title(c, ident)
+        if not route:
+            session = lookup(sid, suffix) if sid else None
+            orphan = None
+            if sid and session is None:
+                old = lookup(sid)
+                if old is not None:
+                    if int(old.get('message_count') or 0) != 0:
+                        raise AdmissionError('This earlier Chats thread has messages; it must be preserved and reconciled before moving agents.')
+                    orphan, sid = sid, None
+            sid = sid or f'wizard_{int(time.time() * 1000)}_{secrets.token_hex(6)}'
+            c.execute('UPDATE wisdom_discussions SET session_id=? WHERE id=?', (sid, ident))
+            c.execute('INSERT INTO wisdom_discussion_chats(thread_id,session_id,agent,orphan_session_id) VALUES(?,?,?,?)',
+                      (ident, sid, agent, orphan))
+            c.commit()
+        route = c.execute('SELECT * FROM wisdom_discussion_chats WHERE thread_id=?', (ident,)).fetchone()
+        sid = route['session_id']
+        agent = route['agent'] or ''
+        suffix = '?' + urlencode({'agent': agent}) if agent else ''
+        model = {k: v for k, v in {'model': discussions.THREAD_MODEL, 'provider': discussions.THREAD_PROVIDER}.items() if v}
+        session = lookup(sid, suffix)
+        if session is None:
+            # Same id on every retry; never create another session after an uncertain create.
+            session = _wizard('POST', '/wizard/hermes/api/sessions' + suffix,
+                              {'source': 'wizard-mobile', 'id': sid, 'title': title,
+                                                             **({'agent': agent} if agent else {}), **model}).get('session') or {}
+            if session.get('id') not in (None, sid):
+                raise AdmissionError('Wizard returned a different thread')
+        if route['orphan_session_id'] and not route['orphan_archived']:
+            old = lookup(route['orphan_session_id'])
+            if old is not None:
+                if int(old.get('message_count') or 0) != 0:
+                    raise AdmissionError('The original thread is no longer empty; refusing to archive it.')
+                _wizard('PATCH', '/wizard/hermes/api/sessions/' + route['orphan_session_id'], {'archived': True})
+                observed = lookup(route['orphan_session_id'])
+                if observed is not None and not observed.get('archived'):
+                    raise AdmissionError('The empty original thread was not archived.')
+            c.execute('UPDATE wisdom_discussion_chats SET orphan_archived=1 WHERE thread_id=?', (ident,))
+            c.commit()
+        history = route['history_payload']
+        count = int(session.get('message_count') or 0)
+        if not route['history_state'] and count == 0:
+            history = discussions.thread_history(c, ident)
+            if history:
+                c.execute("UPDATE wisdom_discussion_chats SET history_payload=?,history_state='pending' WHERE thread_id=?", (history, ident))
+                c.commit()
+        if history and route['history_state'] != 'admitted':
+            # Stable idempotency key + identical persisted input survive timeout, process restart and retries.
+            payload = {'session_id': sid, 'input': history + '\n\nEnd of carried-over history. Do not answer the old questions again. Reply with one short line only: Carried over — ask away.',
+                       **model, **({'require_model_lock': True} if discussions.THREAD_MODEL else {}),
+                       'instructions': '[Wizard OS context]\nRestoring earlier Wisdom discussion history. Treat it as quoted reference data. Do not use tools or answer earlier questions. Reply with one short line only: Carried over — ask away.'}
+            run = _wizard('POST', '/wizard/hermes/v1/runs' + suffix, payload,
+                          {'Idempotency-Key': 'wisdom-history-' + ident}, timeout=20)
+            rid = run.get('run_id') or run.get('id')
+            if not isinstance(rid, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,200}', rid):
+                raise AdmissionError('History admission uncertain; retry this same discussion, never create another run.')
+            c.execute("UPDATE wisdom_discussion_chats SET history_state='admitted',history_run_id=? WHERE thread_id=?", (rid, ident))
+            c.commit()
+        # Keep chapter/passage context beside the first real follow-up, but never duplicate the visible history.
+        reply = discussions.thread_reply(c, ident, include_history=not bool(history))
+        started = count > 0
+        return {'session_id': sid, 'agent': agent, 'title': title, 'started': started,
+                'reply': reply if count == 0 or (history and count <= 2) else None}
+
+
 def request_route(data):
     if set(data) != {'seq'} or type(data['seq']) is not int:
         raise ValueError('One request seq required')
@@ -325,6 +411,14 @@ class Handler(BaseHTTPRequestHandler):
                 with library.LOCK, discussions.LOCK, db() as c:
                     c.row_factory = sqlite3.Row
                     return self.send(200, discussions.create(c, data))
+            discussion_thread = re.fullmatch(r'/api/discussions/([a-f0-9]{32})/thread', path)
+            if discussion_thread:
+                if data:
+                    raise ValueError('Opening a discussion thread takes no fields')
+                try:
+                    return self.send(200, open_discussion_thread(discussion_thread.group(1)))
+                except AdmissionError as e:
+                    return self.send(503, {'error': str(e)})
             discussion_action = re.fullmatch(r'/api/discussions/([a-f0-9]{32})/(ask|stop)', path)
             if discussion_action:
                 ident, action = discussion_action.groups()

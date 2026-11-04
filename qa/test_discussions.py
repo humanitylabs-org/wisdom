@@ -74,6 +74,9 @@ class Discussions(unittest.TestCase):
             out = d.submit(t['id'], request)
             self.assertTrue(out['active'])
             self.assertEqual(len(d.submit(t['id'], request)['messages']), 2)
+            # UI recovery after a lost POST response confirms this durable ID.
+            with d.connection() as c:
+                self.assertEqual(d.get(c, t['id'])['messages'][0]['request_id'], request['request_id'])
             with self.assertRaises(ValueError):
                 d.submit(t['id'], request | {'question': 'Different'})
             with self.assertRaises(ValueError):

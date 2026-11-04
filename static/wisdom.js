@@ -332,6 +332,10 @@ const Wisdom = (() => {
  function enter({restore=false}={}){
   cancelSelectionDrag();
   currentRoute=location.hash;query=queries.get(queryKey())||'';route='wisdom';
+  // pushState/replaceState do not emit hashchange. Invalidate old overlays
+  // from the destination route before rendering (the DOM is still the old chapter).
+  const [,kind,entryId]=parseRoute();
+  window.dispatchEvent(new CustomEvent('wisdom:route',{detail:{entry_id:kind==='read'?entryId:undefined}}));
   saveOpenRoute();
   window.renderWisdom();if(data){window.scrollTo(0,restore?(scrolls.get(currentRoute)||0):0);refreshDay()}else load({restore});
  }
@@ -826,15 +830,15 @@ function highlightNodes(flow){
   document.body.appendChild(ta);ta.select();let ok=false;try{ok=document.execCommand('copy')}catch{}ta.remove();return ok;
  }
  // Save a range (merging what it touches) and make it the active highlight. Optimistic: paints first.
- async function commit(r,s,e,replaces){
+ async function commit(r,s,e,replaces,{activate=true,quiet=false}={}){
   const flow=flowOf(r),m=merged(r,s,e,replaces),text=textFor(flow,m.s,m.e);if(!text)return deactivate();
   const before=data.highlights||[];
   data.highlights=[{id:-1,entry_id:r.dataset.read,start:m.s,end:m.e,text}].concat(before.filter(h=>!(currentAnchor(h)&&h.entry_id===r.dataset.read&&(h.id===replaces||(h.start<m.e&&h.end>m.s)))));
-  hlAct={id:-1,start:m.s,end:m.e};paint(r);showActive();
+  if(activate){hlAct={id:-1,start:m.s,end:m.e};paint(r);showActive()}
   try{
    const d=await api('wisdom/highlight',{action:'add',entry_id:r.dataset.read,start:m.s,end:m.e,text,body_sha256:r.dataset.bodySha256});
-   data.highlights=d.highlights;if(hlAct&&hlAct.id===-1&&hlAct.start===m.s&&hlAct.end===m.e)hlAct.id=d.id;if(reader()===r){paint(r);if(hlAct)showActive()}
-  }catch(err){data.highlights=before;if(reader()===r){hlAct={id:'sel',pending:true,start:m.s,end:m.e};paint(r);showActive()}toast(err.message||'Couldn’t save. Your selection is retained; copy it before reopening this chapter.')}
+   data.highlights=d.highlights;if(activate&&hlAct&&hlAct.id===-1&&hlAct.start===m.s&&hlAct.end===m.e)hlAct.id=d.id;if(reader()===r){paint(r);if(hlAct)showActive()}
+  }catch(err){data.highlights=before;if(reader()===r){if(activate)hlAct={id:'sel',pending:true,start:m.s,end:m.e};paint(r);if(activate)showActive()}if(!quiet)toast(err.message||'Couldn’t save. Your selection is retained; copy it before reopening this chapter.')}
  }
  function bindPop(r){
   const p=r.querySelector('.wb-hlpop');if(!p)return;
@@ -843,12 +847,13 @@ function highlightNodes(flow){
    const b=ev.target.closest('button');if(!b||!hlAct)return;ev.stopPropagation();
    const act=b.dataset.hlAct,cur={...hlAct};
    if(act==='ask'){
-    b.disabled=true;
-    try{
-     if(cur.pending){await commit(r,cur.start,cur.end,undefined);if(!hlAct||hlAct.pending) return;}
-     const h=hlAct||cur,anchor={entry_id:r.dataset.read,body_sha256:r.dataset.bodySha256,start:h.start,end:h.end,text:textFor(flowOf(r),h.start,h.end)};
-     if(h.id>0)anchor.highlight_id=h.id;deactivate();await WisdomDiscussion.open(anchor);
-    }finally{b.disabled=false}
+    // Snapshot before deactivation: saving a highlight is not admission to Ask AI.
+    const m=cur.pending?merged(r,cur.start,cur.end):{s:cur.start,e:cur.end};
+    const anchor={entry_id:r.dataset.read,body_sha256:r.dataset.bodySha256,start:m.s,end:m.e,text:textFor(flowOf(r),m.s,m.e)};
+    if(cur.id>0)anchor.highlight_id=cur.id;
+    deactivate();WisdomDiscussion.open(anchor);
+    // Preserve the existing auto-highlight, but never reopen its toolbar on a late save.
+    if(cur.pending)commit(r,cur.start,cur.end,undefined,{activate:false,quiet:true});
     return;
    }
    if(act==='copy'){const ok=await copyText(textFor(flowOf(r),cur.start,cur.end));toast(ok?'Copied.':'Couldn’t copy. Try again.');deactivate();return}
