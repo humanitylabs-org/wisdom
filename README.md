@@ -1,6 +1,6 @@
 # Wisdom — private testing edition
 
-Version 0.4.0-private.25. Keep this repository and all release artifacts private.
+Version 0.4.0-private.26. Keep this repository and all release artifacts private.
 
 AI routing: see [Connection Router deployment and evidence contract](docs/connection-router.md).
 
@@ -25,7 +25,7 @@ No owner SQLite database, highlights, reading history, requests or credentials s
 
 Use the private prerelease assets for the machine's architecture. Verify SHA256SUMS,
 then `gzip -dc wisdom-image-ARCH.tar.gz | docker load`. The loaded canonical tag is
-`ghcr.io/humanitylabs-org/wisdom:0.4.0-private.25`. Registry access is not implied.
+`ghcr.io/humanitylabs-org/wisdom:0.4.0-private.26`. Registry access is not implied.
 The installer must not replace a preloaded image with an older registry version.
 
 Package manifest: `wizard.md`; Runtipi schema-2 recipe: `runtipi/docker-compose.yml`.

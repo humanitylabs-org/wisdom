@@ -545,3 +545,15 @@
 
 /* Library controls are UI; only the reading canvas uses the reading face. */
 .wb-lib, .wb-request { --wb-text: var(--wz-font-ui); }
+
+/* Friendliness pass (Nov 2026): on light skins the accent is a dark ink, so kickers drawn over dark art
+   (home hero, reader opener, next-chapter card, collection hero) lost their contrast, and the collection
+   hero's title used the light skin's dark text over its dark shade. Over art, keep type light. */
+:root[data-color-scheme="light"]{--wb-on-art:var(--wz-on-accent);--wb-kicker-on-art:color-mix(in oklch,var(--wz-accent) 30%,var(--wz-on-accent))}
+:root[data-color-scheme="light"] :is(.wb-hero:not(:has(.wb-noart)) .wb-hero-copy small,.wb-opener:not(:has(.wb-noart)) .wb-opener-copy small,.wb-next .wb-next-copy small,.wb-book-hero:not(:has(.wb-noart)) .wb-book-copy small,.wb-book-hero:not(:has(.wb-noart)) .wb-form-tag){color:var(--wb-kicker-on-art)}
+:root[data-color-scheme="light"] .wb-book-hero:not(:has(.wb-noart)) .wb-form-tag{border-color:color-mix(in srgb,var(--wb-kicker-on-art) 60%,transparent)}
+:root[data-color-scheme="light"] .wb-book-hero:not(:has(.wb-noart)){color:var(--wb-on-art)}
+:root[data-color-scheme="light"] .wb-book-hero:not(:has(.wb-noart)) .wb-book-stats{color:color-mix(in srgb,var(--wb-on-art) 78%,transparent)}
+/* Small covers fade to the light base: lift their kicker and title off the art with a base-coloured halo. */
+:root[data-color-scheme="light"] :is(.wb-pick-copy small,.wb-cover-art .wb-cover-copy small,.wb-cover-art .wb-cover-copy strong,.wb-pick-copy strong){text-shadow:0 0 2px var(--wz-base),0 0 4px var(--wz-base),0 1px 12px var(--wz-base)}
+:root[data-color-scheme="light"] .wb-book-hero:not(:has(.wb-noart)) .wb-book-cta .wisdom-thumb:not(.selected){color:var(--wb-on-art);border-color:color-mix(in srgb,var(--wb-on-art) 45%,transparent);background:color-mix(in srgb,var(--wb-on-art) 10%,transparent)}

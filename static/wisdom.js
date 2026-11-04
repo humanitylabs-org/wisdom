@@ -198,7 +198,7 @@ const Wisdom = (() => {
  // Your library inside Browse: each view shows its real count and what's in it, then opens the full list.
  function shelfLinks(){
   const cols=data.collections||[],tile=(scope,title,copy)=>link('/shelf/'+scope,`<span class="wb-lib-name">${icon('wisdom')}<strong>${title}</strong><b>${cols.filter(c=>(c.library_scope||'private')===scope).length}</b></span><small>${copy}</small>`,'wb-lib-tile');
-  return `<section class="wb-lib wb-shelves" aria-label="Library shelves"><nav class="wb-lib-grid" aria-label="Library shelves">${tile('shared','Shared library','Approved collections · not public publication')}${tile('private','My library','Your imports and requested collections')}</nav></section>`;
+  return `<section class="wb-lib wb-shelves" aria-label="Library shelves"><nav class="wb-lib-grid" aria-label="Library shelves">${tile('shared','Shared library','Approved for this Wizard')}${tile('private','My library','Your imports and requested collections')}</nav></section>`;
  }
  function shelf(scope){
   if(!['shared','private'].includes(scope))return missing();
@@ -244,7 +244,7 @@ const Wisdom = (() => {
  }
  const reqStatus=r=>r.status==='building'?'your Wizard is building it':r.status==='unsent'?'Saved, not sent':r.status==='requested'?'Sending…':r.status==='done'?'Ready':r.status;
  function requestBlock(){
-  if(!data?.request_enabled)return '<section class="wb-request"><p class="wb-quiet-note">Collection generation is not configured. Import a bundle in Manage collections to add it to My library.</p></section>';
+  if(!data?.request_enabled)return '<section class="wb-request"><p class="wb-quiet-note">Have a collection file? Import it in '+link('/manage','Manage collections')+' and it lands in My library.</p></section>';
   return `<section class="wb-request"><button class="btn wz-button secondary" data-wisdom-request="">Request a collection</button><p class="wb-quiet-note">New collections arrive privately in My library, staged for your review.</p>${(data.requests||[]).map(r=>`<p>${esc(r.text)} · ${esc(reqStatus(r))}${r.status==='unsent'?` <button class="btn wz-button secondary" data-wisdom-retry-req="${r.seq}">Retry</button>`:''}</p>`).join('')}</section>`;
  }
  function allThinkers(){

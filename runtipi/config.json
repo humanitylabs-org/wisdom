@@ -10,8 +10,8 @@
   "categories": [
     "books"
   ],
-  "tipi_version": 1,
-  "version": "0.4.0-private.25",
+  "tipi_version": 2,
+  "version": "0.4.0-private.26",
   "source": "https://github.com/humanitylabs-org/wisdom",
   "exposable": false,
   "supported_architectures": [
