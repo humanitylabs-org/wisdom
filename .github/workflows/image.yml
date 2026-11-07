@@ -1,4 +1,4 @@
-name: Source checks (builds run on the build worker)
+name: Source checks (builds run on Thales)
 on:
   pull_request:
   workflow_dispatch:
