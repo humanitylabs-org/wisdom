@@ -1,4 +1,4 @@
-"""The app uses the shared, immutable Wizard component kit, not a local fork."""
+"""Wisdom keeps its own authored look (Fraunces/Newsreader type, gold accent); the shared kit files stay pinned but are not loaded."""
 import hashlib
 import json
 from pathlib import Path
@@ -26,7 +26,10 @@ class SharedStyle(unittest.TestCase):
             self.assertIsNotNone(found)
             if found: sizes[size] = found.group(1)
         self.assertEqual(len(set(sizes.values())), 3, 'A−/A+ must not collapse to the same size')
-        self.assertIn('--wb-display:var(--wz-font-reading)', css, 'Editorial headlines remain serif')
+        self.assertIn('--wb-display:"WB Display","WB Text",Georgia,serif', css, 'Editorial headlines stay Fraunces serif')
+        self.assertIn('@font-face{font-family:"WB Display"', css)
+        self.assertIn('--wb-gold:#e8b46a', css, 'Wisdom keeps its own gold accent')
+        self.assertNotIn('var(--wz-', css, 'wisdom.css must not depend on kit tokens')
         self.assertRegex(css, r'\.wb-opener-copy h1\{[^}]*clamp\(', 'Keep responsive cover headline scale')
 
     def test_hosted_panel_defaults_use_opaque_skin_roles(self):
@@ -38,12 +41,11 @@ class SharedStyle(unittest.TestCase):
             self.assertIn('linear-gradient(var(--wz-overlay', rule, selector)
             self.assertRegex(rule, r'var\(--wz-(panel|base)\b', selector)
 
-    def test_entrypoint_loads_the_shared_component_classes(self):
+    def test_entrypoint_does_not_restyle_wisdom_with_the_kit(self):
         entry = (WEB / 'index.html').read_text()
-        self.assertIn('wizard-ui.css', entry)
-        scripts = '\n'.join(p.read_text() for p in WEB.glob('*.js') if not p.name.startswith('wizard-'))
-        self.assertIn('wz-button', entry + scripts)
-
+        for name in ('wizard-ui.css', 'wizard-tokens.css', 'wizard-sheet.js'):
+            self.assertNotIn(name, entry, name + ' must not restyle Wisdom (James, 7 Nov 2026)')
+        self.assertIn('content="#121212"', entry)
 
     def test_every_local_asset_the_entrypoint_loads_is_served(self):
         """index.html's own files must be in server.STATIC, or the reader gets a JSON 404 and loses the kit."""
@@ -53,7 +55,6 @@ class SharedStyle(unittest.TestCase):
                       if isinstance(n, ast.Assign) and any(getattr(t, 'id', '') == 'STATIC' for t in n.targets))
         entry = (WEB / 'index.html').read_text()
         local = {u for u in re.findall(r'(?:href|src)="([^"]+)"', entry) if not re.match(r'(?:[a-z]+:|/|#)', u)}
-        self.assertTrue({'wizard-tokens.css', 'wizard-ui.css', 'wizard-sheet.js'} <= local)
         self.assertEqual(sorted(local - static), [])
         self.assertEqual(sorted(n for n in static if not (WEB / n).is_file()), [])
 
