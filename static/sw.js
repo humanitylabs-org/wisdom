@@ -43,6 +43,6 @@ self.WIZ_OFFLINE_CONFIG = {
     "/wizard-os-home/core/app-client.js",
     "/wizard-os-home/core/app-identity.js"
   ],
-  "version": "177a8f76464493871850"
+  "version": "e9de77705a72a4a477d3"
 };
 importScripts("./offline-sw.js");
