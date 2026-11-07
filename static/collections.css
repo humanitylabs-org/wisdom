@@ -85,9 +85,9 @@
 .wb-go-deeper .wb-go-art{flex:0 0 48px;width:48px;height:64px;border-radius:8px;object-fit:cover;overflow:hidden}
 .wb-go-deeper .wb-go-art.wb-mosaic,.wb-go-deeper .wb-go-art.wb-initial{display:grid;place-items:center}
 .wb-go-copy{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
-.wb-go-copy small{color:var(--wb-gold);font:700 10px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase}
-.wb-go-copy strong{font:600 19px/1.15 var(--wb-display);overflow-wrap:anywhere}
-.wb-go-copy span{color:var(--wb-mute);font:500 13px/1.3 var(--sans)}
+.wb-go-copy small{color:var(--wb-gold);font:700 .625rem/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase}
+.wb-go-copy strong{font:600 1.1875rem/1.15 var(--wb-display);overflow-wrap:anywhere}
+.wb-go-copy span{color:var(--wb-mute);font:500 .8125rem/1.3 var(--sans)}
 .wb-end-quiet{display:flex;align-items:center;gap:6px;margin-top:auto}
 .wb-quiet{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;border:0;background:transparent;color:var(--wb-mute);font:600 var(--wz-text-md)/1 var(--sans);text-decoration:none;cursor:pointer}
 .wb-quiet:first-child{margin-left:-10px}

@@ -66,11 +66,11 @@ html[data-wz-hosted] .wb-flow .wb-keyline{border-color:var(--wb-edge)}
 html[data-wz-hosted] .wb-reader[data-at="text"] .wb-top,html[data-wz-hosted] .wb-reader[data-at="end"] .wb-top{background:linear-gradient(180deg,var(--wb-paper) 70%,transparent)}
 html[data-wz-hosted] .wb-epigraph{background:radial-gradient(120% 70% at 50% 40%,color-mix(in srgb,var(--wb-gold) 9%,transparent),transparent 70%)}
 html[data-wz-hosted] .wb-round{background:var(--wz-overlay);color:var(--wz-text)}
-html[data-wz-hosted] .wb-reader[data-at="opener"] .wb-round{background:rgba(20,18,16,.55);color:#f3ede3}
+html[data-wz-hosted] .wb-reader[data-at="opener"] .wb-round{background:color-mix(in srgb,black 55%,transparent);color:linen}
 html[data-wz-hosted] .wb-reader[data-at="opener"]:has(.wb-opener .wb-noart) .wb-round{background:var(--wz-overlay);color:var(--wz-text)}
 html[data-wz-hosted] :is(.wb-hlpop,.wb-glosspop){background:linear-gradient(var(--wz-overlay,transparent),var(--wz-overlay,transparent)),var(--wz-panel,var(--wz-base,var(--surface)));border-color:var(--wb-edge);color:var(--wz-text);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 /* Explanations overlay prose: composite the skin material over an opaque base. */
-html[data-wz-hosted] .wb-glosspop{background:linear-gradient(var(--wz-overlay),var(--wz-overlay)),var(--wz-base,var(--surface,#17131f));-webkit-backdrop-filter:none;backdrop-filter:none}
+html[data-wz-hosted] .wb-glosspop{background:linear-gradient(var(--wz-overlay),var(--wz-overlay)),var(--wz-base,var(--surface,var(--wz-base)));-webkit-backdrop-filter:none;backdrop-filter:none}
 html[data-wz-hosted] .wb-hlpop button:not([hidden])~button:not([hidden])::before{background:var(--wb-edge)}
 html[data-wz-hosted] .wb-sheet-card{background:linear-gradient(var(--wz-overlay,transparent),var(--wz-overlay,transparent)),var(--wz-panel,var(--wz-base,var(--surface)));color:var(--wz-text);-webkit-backdrop-filter:blur(22px) saturate(1.2);backdrop-filter:blur(22px) saturate(1.2)}
 html[data-wz-hosted] .wb-sheet-card textarea{background:var(--wz-surface);border-color:var(--wb-edge)}
