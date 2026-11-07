@@ -45,3 +45,12 @@ actual shared app-client.js), and a separate `WISDOM_QA_EVIDENCE` directory for 
 `WISDOM_QA_BROWSER` defaults to Chrome. Set `TMPDIR` on the designated data volume.
 The fixture is disposable; it never uses the owner's library. Home tests cover 412px
 and 360px widths. Model tests run through the standard unittest discovery runner.
+
+## Go deeper (0.4.0-private.30)
+
+A chapter read inside a multi-thinker collection (a sampler such as *The wisdom of the Stoics*) ends with a
+"Go deeper" card above Discuss with AI when its thinker also has a single-thinker collection: cover, thinker
+name, collection title and progress, linking `/collection/<id>`. The newest such collection wins. Chapters in
+single-thinker collections, and thinkers without their own collection, show no card. Back from the collection
+returns to the chapter's end page. Tests: `qa/go_deeper_model.cjs` (via `qa.test_collection_home`) and
+`qa/browser_go_deeper_live.cjs` (read-only, every multi-thinker chapter of a live library).

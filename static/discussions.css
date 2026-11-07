@@ -48,7 +48,7 @@ html[data-skin="signal"] .wd-connect{border-radius:2px;font-family:var(--wz-font
 .wd-citation{display:inline!important;padding:0!important;min-height:0!important;color:var(--wd-accent)!important;text-decoration:underline;text-underline-offset:3px}
 .wd-row-scope{display:block;margin:6px 0 2px;color:var(--wd-muted);font-size:var(--wz-text-sm);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 
-/* Chat layout (James, 19 Oct 2026): a sleek AI chat, not a form. The sheet
+/* Chat layout (owner request, 19 Oct 2026): a sleek AI chat, not a form. The sheet
  * fits its content until the conversation needs the room; one pill composer. */
 .wd-panel{position:absolute;bottom:0;left:0;right:0;height:auto;max-height:min(88%,760px);min-height:0;display:flex;flex-direction:column;pointer-events:auto;background:linear-gradient(var(--wd-material),var(--wd-material)),var(--wd-surface);border:1px solid var(--wd-border);border-bottom:0;border-radius:28px 28px 0 0;box-shadow:0 -12px 48px color-mix(in srgb,var(--wz-base) 35%,transparent);overflow:hidden;isolation:isolate;overscroll-behavior:contain}
 .wd-panel.wd-expanded{height:calc(100% - 24px);max-height:none}

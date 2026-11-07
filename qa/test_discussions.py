@@ -34,7 +34,7 @@ class Discussions(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_passage_prompt_explains_highlight_not_chapter(self):
-        # James, 19 Oct: Explain on a highlighted sentence answers about that sentence, briefly.
+        # owner request, 19 Oct: Explain on a highlighted sentence answers about that sentence, briefly.
         self.assertTrue(d.SYSTEM.startswith('The reader highlighted the passage'))
         for rule in ('Do not summarise, retell or survey the chapter', 'at most 120 words', 'no headings or lists'):
             self.assertIn(rule, d.SYSTEM)

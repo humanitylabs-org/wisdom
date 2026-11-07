@@ -1,4 +1,4 @@
-// Thales-only acceptance. Disposable data, actual HTTP API and unmodified shared core.
+// Build-worker-only acceptance. Disposable data, actual HTTP API and unmodified shared core.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn}=require('child_process'),{createInterface}=require('readline');
 const fs=require('fs'),path=require('path'),assert=require('assert');
@@ -20,7 +20,8 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
    const data=await page.evaluate(async()=> (await fetch('api/wisdom')).json());
    assert.equal(await page.evaluate(()=>WizardApp.version),1);
    assert.equal(await page.locator('.wb-home-tools').count(),0);assert.equal(await page.getByRole('heading',{name:'Today’s picks'}).count(),0);
-   assert.deepEqual(await page.locator('.wb-home > section > .wb-head > h2').allTextContents(),['Suggested '+Math.min(6,data.collections.length-1),'Browse and search']);
+   const suggestedCount=await page.locator('.wb-suggest-grid .wb-cover').count();assert(suggestedCount<=6);
+   assert.deepEqual(await page.locator('.wb-home > section > .wb-head > h2').allTextContents(),['Suggested '+suggestedCount,'Browse and search']);
    const hero=await page.locator('.wb-hero').getAttribute('data-wisdom-route');assert(hero.startsWith('/collection/'));
    await page.locator('.wb-hero').click();await page.waitForSelector('.wb-collection');
    await page.locator('.wb-book-top [data-wisdom-back]').click();await page.waitForSelector('.wb-home');assert.equal(await hash(),'');

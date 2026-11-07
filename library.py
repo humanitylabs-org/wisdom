@@ -3,7 +3,7 @@
 No bundle supplies code, HTML, fonts or configuration. Registry state is in
 app-data; immutable document trees are in the owner's media library.
 """
-import base64, hashlib, io, json, os, re, shutil, stat, threading, uuid, zipfile, copy
+import base64, hashlib, io, json, os, re, shutil, stat, threading, uuid, zipfile, copy, contextlib
 from collections import OrderedDict
 
 CACHE = OrderedDict()
@@ -332,13 +332,31 @@ def action(c, data):
     key = ident(data['id'])
     with LOCK:
         status = {'enable': 'enabled', 'disable': 'disabled', 'remove': 'removed'}[data['action']]
+        if status == 'enabled':
+            b = next((b for b in list_bundles(c) if b['id'] == key), None)
+            if b:
+                try:
+                    package_files(b)  # Publish verified navigation before enabling.
+                except (ValueError, OSError) as e:
+                    raise ValueError('Bundle unavailable or changed; enable was not applied. Personal state is retained.') from e
         if not c.execute('UPDATE wisdom_bundles SET status=? WHERE id=?', (status, key)).rowcount:
             raise ValueError('Unknown bundle')
         c.commit()
         return next(b for b in list_bundles(c) if b['id'] == key)
 
 
-def package_files(b):
+# Navigation metadata is derived ONLY from a fully verified bundle. Keep it
+# separately from the bounded document-byte LRU: evicting artwork must not make
+# opening the library verify every chapter again. A changed file identity cannot
+# reuse this projection, and projections never contain readable chapter bodies.
+NAVIGATION = OrderedDict()
+NAVIGATION_LOCK = threading.RLock()
+# Independent of library.LOCK: selected chapter misses can progress during a
+# full-library traversal, without unbounded simultaneous archive inflation.
+VERIFICATIONS = threading.BoundedSemaphore(2)
+
+
+def package_identity(b):
     import collection_revision
     ident(b['id']); collection_revision.digest(b['sha256'])
     edition = collection_revision.edition_path(b['id'], b['sha256'])
@@ -347,29 +365,87 @@ def package_files(b):
     if folder.is_symlink() or f.is_symlink() or not f.resolve().is_relative_to(root().resolve()) or f.stat().st_size > MAX:
         raise ValueError('Bundle path invalid')
     st = f.stat()
-    token = (str(f.resolve()), b['sha256'], st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
-    if token not in CACHE:
-        raw = f.read_bytes()
-        if hashlib.sha256(raw).hexdigest() != b['sha256']:
-            raise ValueError('Bundle checksum changed')
-        CACHE[token] = inspect_bundle(raw)
-        while len(CACHE) > 4:
-            CACHE.popitem(last=False)
-    CACHE.move_to_end(token)
-    m, d, files = CACHE[token]
+    return f, (str(f.resolve()), b['sha256'], st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns, st.st_ctime_ns)
+
+
+def remember_navigation(b, m, d, files, *, pending=False):
+    _, token = package_identity(b)
+    nav = copy.deepcopy(d)
+    for e in nav['entries']:
+        body = files['content/' + e['id'] + '.md']
+        e.pop('body', None)
+        e['body_sha256'] = hashlib.sha256(body).hexdigest()
+        e['words'] = len(body.decode('utf-8').split())
+        e['minutes'] = max(1, (e['words'] + 219) // 220)
+    with NAVIGATION_LOCK:
+        # Add before revision commit, retaining the old token for readers whose
+        # database snapshot still names it. Uncommitted tokens have no DB authority.
+        NAVIGATION[token] = (dict(m), nav, {n: None for n in files if n.startswith('art/')})
+        NAVIGATION.move_to_end(token)
+        if not pending:
+            while len(NAVIGATION) > 128:
+                NAVIGATION.popitem(last=False)
+    return token
+
+
+def finish_navigation(token, *, committed):
+    with NAVIGATION_LOCK:
+        if not committed:
+            NAVIGATION.pop(token, None)
+        while len(NAVIGATION) > 128:
+            NAVIGATION.popitem(last=False)
+
+
+def package_navigation(b):
+    _, token = package_identity(b)
+    with NAVIGATION_LOCK:
+        if token not in NAVIGATION:
+            raise ValueError('Navigation projection needs a verified edition')
+        m, d, files = NAVIGATION[token]
+        return dict(m), copy.deepcopy(d), dict(files)
+
+
+def package_files(b, *, navigation=True):
+    import collection_revision
+    f, token = package_identity(b)
+    with NAVIGATION_LOCK:
+        cached = CACHE.get(token)
+        if cached is not None:
+            CACHE.move_to_end(token)
+    if cached is None:
+        with VERIFICATIONS:
+            with NAVIGATION_LOCK:
+                cached = CACHE.get(token)
+            if cached is None:
+                raw = f.read_bytes()
+                if hashlib.sha256(raw).hexdigest() != b['sha256']:
+                    raise ValueError('Bundle checksum changed')
+                cached = inspect_bundle(raw)
+                if package_identity(b)[1] != token:
+                    raise ValueError('Bundle changed during verification')
+                with NAVIGATION_LOCK:
+                    CACHE[token] = cached
+                    while len(CACHE) > 4:
+                        CACHE.popitem(last=False)
+    m, d, files = cached
+    with NAVIGATION_LOCK:
+        known = token in NAVIGATION
+    if navigation and not known:
+        remember_navigation(b, m, d, files)
     return dict(m), copy.deepcopy(d), files
 
 
-def catalog(c):
+def catalog(c, *, metadata=False):
     out = {'thinkers': [], 'entries': [], 'collections': [], '_art': {}, '_glosses': {}, '_notices': []}
-    with LOCK:
+    # Metadata reads never queue behind full hydration/artwork verification.
+    with (contextlib.nullcontext() if metadata else LOCK):
         bundles = list_bundles(c)
         thinkers = set()
         for b in bundles:
             if b['status'] != 'enabled':
                 continue
             try:
-                m, d, files = package_files(b)
+                m, d, files = package_navigation(b) if metadata else package_files(b)
             except (ValueError, OSError):
                 out['_notices'].append(b['title'] + ': bundle unavailable or changed; personal state is retained.')
                 continue
@@ -387,12 +463,13 @@ def catalog(c):
                 e['library_provenance'] = 'collection-membership'
             for kind in ('entries', 'collections'):
                 out[kind].extend(d[kind])
-            for e in d['entries']:
-                e['body'] = files['content/' + e['id'] + '.md'].decode('utf-8')
+            if not metadata:
+                for e in d['entries']:
+                    e['body'] = files['content/' + e['id'] + '.md'].decode('utf-8')
             for n in files:
                 if n.startswith('art/'):
                     out['_art'][n[4:]] = b['id']
-            if 'content/glosses.json' in files:
+            if not metadata and 'content/glosses.json' in files:
                 out['_glosses'].update(bounded_json(files['content/glosses.json']))
         # Soft removal retains immutable documents. Only portraits may be
         # inherited from disabled/removed bundles, and only for thinkers
@@ -404,7 +481,7 @@ def catalog(c):
             if b['status'] not in ('disabled', 'removed'):
                 continue
             try:
-                _, _, files = package_files(b)
+                _, _, files = package_navigation(b) if metadata else package_files(b)
             except (ValueError, OSError):
                 continue
             for key in tuple(missing):
@@ -417,7 +494,7 @@ def catalog(c):
 
 def art(c, category, key):
     with LOCK:
-        owner = catalog(c)['_art'].get(category + '/' + key + '.jpg')
+        owner = catalog(c, metadata=True)['_art'].get(category + '/' + key + '.jpg')
         if not owner:
             return None
         b = next(b for b in list_bundles(c) if b['id'] == owner)

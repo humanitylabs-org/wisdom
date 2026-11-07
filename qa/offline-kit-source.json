@@ -1,0 +1,9 @@
+{
+  "repo": "humanitylabs-org/wizard-ux",
+  "commit": "a1e99c6d60ebf977b59b74633c426e8b97259b83",
+  "adaptation": "Wisdom's approved adaptation of the shared offline kit: strict crash durability and a presentation journal; no runtime kit changes in library boot.",
+  "files": {
+    "offline-kit.js": "c2f33226ceeaf620964ed04397fcdd75b560119a84919c5fbb0b3289f3739080",
+    "offline-sw.js": "03cc44f686a0cf3a71e060d1c1088e5508304a53fac7cd4c432997ce1d33687a"
+  }
+}

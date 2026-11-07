@@ -108,7 +108,7 @@ def keep_rejected(folder, chapter, attempt, error, raw):
     return Path(name)
 
 
-def author(chapter, brief, sources, output, receipt, attempts=ATTEMPTS, glossary=False):
+def author(chapter, brief, sources, output, receipt, attempts=ATTEMPTS, glossary=False, format='wisdom.compression.v1'):
     library.ident(chapter)
     raw_result = receipt.with_name(receipt.name + '.cli.json')
     kept_sources = receipt.with_name(receipt.name + '.sources.json')
@@ -130,12 +130,16 @@ def author(chapter, brief, sources, output, receipt, attempts=ATTEMPTS, glossary
         if folder.is_symlink() or (folder.exists() and not folder.is_dir()):
             raise ValueError('Output and receipt folders must be plain directories')
         folder.mkdir(mode=0o700, parents=True, exist_ok=True)
-    request = {'chapter_id': chapter, 'brief': brief_raw.decode(), 'sources': source_data}
+    request = {'chapter_id': chapter, 'brief': brief_raw.decode(), 'sources': source_data,
+               'collection_rules': c['collection_rules']}
     schema = {'type': 'object', 'properties': {'chapter_id': {'type': 'string', 'const': chapter}, 'body': {'type': 'string'}},
               'required': ['chapter_id', 'body'], 'additionalProperties': False}
     if glossary:
         schema = policy.glossary_schema()
-    stage = c['glossary'] if glossary else c
+    stage = c['glossary'] if glossary else c if format == c['format'] else c['forms'].get(format)
+    if stage is None:
+        raise ValueError('Unsupported chapter format')
+    request['format'] = stage['format']
     rejected_dir = receipt.parent / 'rejected'
     spent, kept, error, history = 0.0, [], None, []
     for attempt in range(1, attempts + 1):
@@ -161,6 +165,8 @@ def author(chapter, brief, sources, output, receipt, attempts=ATTEMPTS, glossary
             raise ValueError(str(e) + '. No edition; rejected response kept at ' + kept[-1])
         try:
             body_text, checks = draft(result, chapter, source_data, brief_raw.decode() if glossary else None)
+            if not glossary and policy.chapter_format(body_text) != format:
+                raise ValueError('Returned chapter does not match selected format')
         except ValueError as e:
             error = str(e)
             value = result.get('structured_output')
@@ -170,6 +176,7 @@ def author(chapter, brief, sources, output, receipt, attempts=ATTEMPTS, glossary
         body = body_text.encode()
         record = {'version': 1, 'workflow': stage['id'], 'workflow_version': stage['version'], 'format': stage['format'],
                   'workflow_sha256': c['workflow_sha256'], 'prompt_sha256': stage['prompt_sha256'],
+                  'collection_rules_sha256': c['collection_rules']['sha256'],
                   'brief_sha256': policy.sha(brief_raw), 'sources_sha256': policy.sha(source_raw),
                   'input_sha256': policy.sha(payload.encode()), 'cli_result_sha256': policy.sha(raw),
                   'output_sha256': policy.sha(body), 'output_tokens_sha256': admission.tokens_sha256(body), 'chapter_id': chapter, 'provider': c['provider'], 'model': c['model'],
@@ -192,10 +199,11 @@ def main():
     for name in ('brief', 'sources', 'output', 'receipt'):
         p.add_argument('--' + name, type=Path, required=True)
     p.add_argument('--chapter', required=True, help='Stable chapter or collection identifier')
+    p.add_argument('--format', choices=['wisdom.compression.v1', 'wisdom.scripture-study.v1', 'wisdom.symbolic-story.v1'], default='wisdom.compression.v1')
     p.add_argument('--glossary', action='store_true', help='Author only the optional glossary using the packaged glossary stage')
     a = p.parse_args()
     try:
-        print(json.dumps(author(a.chapter, a.brief, a.sources, a.output, a.receipt, glossary=a.glossary), indent=2))
+        print(json.dumps(author(a.chapter, a.brief, a.sources, a.output, a.receipt, glossary=a.glossary, format=a.format), indent=2))
     except Rejected as e:
         print(str(e), file=sys.stderr)
         return EXIT_REJECTED

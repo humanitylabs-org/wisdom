@@ -1,6 +1,12 @@
 # Wisdom — private testing edition
 
-Version 0.4.0-private.25. Keep this repository and all release artifacts private.
+Version 0.4.0-private.36. Keep this repository and all release artifacts private.
+
+Collection planning, portable rules and special-form validation: see
+[the installed collection rules](docs/authoring/COLLECTION-RULES.md).
+Personalization is a separate, unshipped slice with a completed
+[implementation contract](docs/authoring/PERSONALIZATION.md). This release never
+rewrites an existing library.
 
 AI routing: see [Connection Router deployment and evidence contract](docs/connection-router.md).
 
@@ -8,24 +14,13 @@ Candidate source: pinned authoring and safe existing-collection revision are
 documented in [the app-owned workflow](docs/authoring/PINNED-WORKFLOW.md).
 This version label does not imply an image was built or deployed.
 
-Fresh installs contain exactly four existing owner-selected collections (45 texts):
-- `steve-jobs` — The wisdom of Steve Jobs (10)
-- `tao-te-ching` — The wisdom of the Tao Te Ching (13)
-- `black-mirror` — The wisdom of Black Mirror (13)
-- `around-every-circle` — Around Every Circle (9)
-
-The last title is an exact match, not a guess. Its embedded `circle-nagarjuna` chapter
-is deliberately omitted under the explicit Nāgārjuna exclusion. Datura and the
-standalone Nāgārjuna collection are absent. Texts are existing generated summaries,
-commentary and public-domain source quotations; no book/episode files are included.
-Only selected chapter/thinker artwork and relevant glosses accompany these bundles.
-No owner SQLite database, highlights, reading history, requests or credentials ship.
+Public builds ship no starter collections (`starter/` is empty), so a fresh install starts with an empty library. Collections are added through the app's import/request flows or by dropping up to four bundle `*.zip` files into `starter/` before first start (see `starter/README.md`). No owner SQLite database, highlights, reading history, requests or credentials ship.
 
 ## Installation contract for the receiving agent
 
 Use the private prerelease assets for the machine's architecture. Verify SHA256SUMS,
 then `gzip -dc wisdom-image-ARCH.tar.gz | docker load`. The loaded canonical tag is
-`ghcr.io/humanitylabs-org/wisdom:0.4.0-private.25`. Registry access is not implied.
+`ghcr.io/humanitylabs-org/wisdom:0.4.0-private.36`. Registry access is not implied.
 The installer must not replace a preloaded image with an older registry version.
 
 Package manifest: `wizard.md`; Runtipi schema-2 recipe: `runtipi/docker-compose.yml`.

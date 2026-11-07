@@ -29,6 +29,9 @@ def main():
             def do_GET(self):
                 if self.path == '/wizard-os-home/core/app-client.js':
                     return self.send(200, core, 'application/javascript')
+                if self.path == '/wizard-os-home/core/app-identity.js':
+                    identity = Path(os.environ.get('WISDOM_QA_IDENTITY', str(Path(os.environ['WISDOM_QA_CORE']).with_name('app-identity.js')))).read_bytes()
+                    return self.send(200, identity, 'application/javascript')
                 return super().do_GET()
         http = server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
         threading.Thread(target=http.serve_forever, daemon=True).start()

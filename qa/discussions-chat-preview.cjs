@@ -1,17 +1,17 @@
-/* Hosted candidate preview of the chat-style Discuss with AI sheet (Thales, real tailnet shell).
+/* Hosted candidate preview of the chat-style Discuss with AI sheet (real tailnet shell).
  * Candidate discussions.{css,js} are intercepted from QA_ASSET_DIR; every non-GET is intercepted,
  * so owner data is untouched. Captures empty, typing and conversation states at phone widths.
  * PLAYWRIGHT_DIR=... QA_ASSET_DIR=.../static EVIDENCE=... node qa/discussions-chat-preview.cjs
  */
 const {chromium,devices}=require(process.env.PLAYWRIGHT_DIR),fs=require('fs'),path=require('path'),assert=require('assert');
-const BASE=process.env.WISDOM_HOST_URL||'https://wizard.tailc0f369.ts.net/wizard-os-home/?open=wisdom';
+const BASE=process.env.WISDOM_HOST_URL||'https://wizard.example.ts.net/wizard-os-home/?open=wisdom';
 const out=process.env.EVIDENCE;assert(out);fs.mkdirSync(out,{recursive:true});
 const thread=(post,messages)=>({id:'chat-preview',entry_id:post.entry_id,chapter_title:'The name is not the thing',quote:'',body_sha256:post.body_sha256,start:0,end:0,scope:'chapter',messages,active:false,web_enabled:true,configured:true,model:'Claude'});
 const convo=[{id:'u1',role:'user',state:'done',content:'What is the one big idea of this chapter, in plain language?'},
  {id:'a1',role:'assistant',state:'done',content:'Words point at reality; they are not reality.\n\nLaozi opens by warning that any **name** you give the Way is already smaller than the Way itself. The label is useful for talking, but it can trick you into thinking you have grasped the thing.\n\n- Naming creates the “ten thousand things”\n- Desire lets you see the edges; stillness lets you see the mystery',sources:[{title:'The chapter',text:'Stored chapter excerpt'}]},
  {id:'u2',role:'user',state:'done',content:'How would I apply that this week?'}];
 (async()=>{
- const browser=await chromium.launch({headless:true,channel:'chrome'});const receipt=[];
+ const browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'});const receipt=[];
  try{for(const width of [360,412]){
   const ctx=await browser.newContext({...devices['Pixel 7'],viewport:{width,height:860}});let withMessages=false;const blocked=[];
   for(const ext of ['css','js'])await ctx.route(`**/wisdom/discussions.${ext}*`,r=>r.fulfill({contentType:ext==='css'?'text/css':'application/javascript',body:fs.readFileSync(path.join(process.env.QA_ASSET_DIR,`discussions.${ext}`),'utf8')}));

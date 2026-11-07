@@ -1,4 +1,4 @@
-// Thales: desktop reading follows Kindle (James, 19 Oct 2026). With a mouse the reader never swipes: press-and-drag
+// Build worker: desktop reading follows Kindle (owner request, 19 Oct 2026). With a mouse the reader never swipes: press-and-drag
 // over text selects it (Ask AI / Highlight pop appears, page unchanged), a double-click selects a word, a click on
 // text never turns the page, and pages turn with the edge arrows, the arrow keys and the wheel (one page per
 // gesture). Touch keeps swipe and has no edge arrows. Real HTTP fixture, disposable data, real mouse/touch via CDP.
@@ -11,7 +11,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
  let browser;
  try{
   const info=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('fixture timeout')),15000);fixture.once('exit',c=>reject(Error('fixture exit '+c)));createInterface({input:fixture.stdout}).once('line',l=>{clearTimeout(t);resolve(JSON.parse(l))})});
-  browser=await chromium.launch({headless:true,channel:'chrome'});
+  browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'});
   const checks=[],errors=[],base=info.url;
   const setup=async(ctx,width)=>{
    const page=await ctx.newPage();page.on('pageerror',e=>errors.push(width+': '+e.message));

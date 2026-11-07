@@ -1,10 +1,10 @@
-/* Read-only home regression in the real Wizard shell; run on Thales.
+/* Read-only home regression in the real Wizard shell; run on the build worker.
  * WISDOM_HOST_URL, PLAYWRIGHT_MODULE, QA_OUT required. QA_ASSET_DIR stages candidate JS.
  */
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const fs=require('fs'),path=require('path'),assert=require('assert');
 (async()=>{
- const browser=await chromium.launch({channel:'chrome',headless:true}),checks=[];
+ const browser=await chromium.launch({channel:process.env.WISDOM_QA_BROWSER||'chrome',headless:true}),checks=[];
  const out=process.env.QA_OUT;fs.mkdirSync(out,{recursive:true});
  try{for(const width of [360,412,1280]){
   const context=await browser.newContext({viewport:{width,height:900},colorScheme:'dark',isMobile:width<900,hasTouch:true});

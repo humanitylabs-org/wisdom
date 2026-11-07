@@ -1,4 +1,4 @@
-// Thales: Home leads with Continue reading (last chapter open, at its page), then Currently reading by most
+// Build worker: Home leads with Continue reading (last chapter open, at its page), then Currently reading by most
 // recently opened, then Suggested newest first with View all. Real HTTP fixture + shared WizardApp, disposable data.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn}=require('child_process'),{createInterface}=require('readline');
@@ -9,7 +9,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
  let browser;
  try{
   const info=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('fixture timeout')),15000);fixture.once('exit',c=>reject(Error('fixture exit '+c)));createInterface({input:fixture.stdout}).once('line',l=>{clearTimeout(t);resolve(JSON.parse(l))})});
-  browser=await chromium.launch({headless:true,channel:'chrome'});
+  browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'});
   const checks=[],errors=[];
   for(const width of [390,360]){
    const ctx=await browser.newContext({viewport:{width,height:860},isMobile:true,hasTouch:true});

@@ -1,6 +1,6 @@
-/* Thales-only isolated UI contract fixture. NOT real model/backend evidence.
+/* Worker-only isolated UI contract fixture. NOT real model/backend evidence.
  * PLAYWRIGHT_DIR=/.../playwright WISDOM_QA_CORE=/.../app-client.js
- * WISDOM_QA_EVIDENCE=/Volumes/ThalesMedia/... node qa/discussions-ui.spec.cjs
+ * WISDOM_QA_EVIDENCE=<evidence-dir> node qa/discussions-ui.spec.cjs
  */
 const {chromium} = require(process.env.PLAYWRIGHT_DIR);
 const fs = require('fs'), path = require('path'), http = require('http'), assert = require('assert');
@@ -38,7 +38,7 @@ const server = http.createServer(async(req,res)=>{
     if(!t.requests)t.requests=[];
     if(!t.requests.includes(data.request_id)){
       t.requests.push(data.request_id);t.web_enabled=data.web_enabled;t.active=true;
-      t.messages.push({id:crypto.randomUUID(),role:'user',content:data.question,state:'done'}, {id:crypto.randomUUID(),role:'assistant',state:'streaming',content:'A **careful** reading. [Reference](https://example.com/source) [unsafe](javascript:alert(1)) <img src=x onerror="window.pwned=1">',sources:[{title:'The chapter',text:'Stored chapter excerpt'},{title:'Reference',url:'https://example.com/source'}]});
+      t.messages.push({id:crypto.randomUUID(),role:'user',content:data.question,state:'done',request_id:data.request_id}, {id:crypto.randomUUID(),role:'assistant',state:'streaming',content:'A **careful** reading. [Reference](https://example.com/source) [unsafe](javascript:alert(1)) <img src=x onerror="window.pwned=1">',sources:[{title:'The chapter',text:'Stored chapter excerpt'},{title:'Reference',url:'https://example.com/source'}]});
     }
     if(failDelivery){failDelivery=false;return reply(res,{error:'Fixture lost acknowledgement'},503);}
     return reply(res,t);
@@ -56,10 +56,12 @@ const server = http.createServer(async(req,res)=>{
    const url='http://127.0.0.1:'+server.address().port+'/';await page.goto(url);
    const id='chapter-'+width;await page.evaluate(id=>{anchor.entry_id=id},id);
    const geometry=()=>page.locator('#reader').boundingBox();const before=await geometry();
-   await page.locator('#open').click();await page.waitForFunction(()=>!document.querySelector('.wd-composer textarea').disabled);
+   await page.locator('#open').click();await page.waitForFunction(()=>document.querySelector('.wd-status')&&!document.querySelector('.wd-status').textContent.includes('Opening saved discussion'));
    assert.equal(threads.get(id).messages.length,0);
    assert.deepEqual(await geometry(),before);checks.push(width+': idle open does not reflow reader or generate');
    await page.locator('.wd-chip').first().click();assert.equal(threads.get(id).messages.length,0);
+   assert.deepEqual(await page.locator('.wd-chip').allTextContents(),['Explain','Simplify','Example','Challenge']);assert.equal(await page.locator('textarea').inputValue(),'Explain','chip inserts its one word, nothing longer');checks.push(width+': chips are one-word commands');
+   await page.locator('textarea').fill('');
    await page.locator('textarea').fill('Keep my draft');
    await page.locator('.wd-close').click();assert(await page.evaluate(()=>held>0));
    await page.evaluate(()=>WisdomDiscussion.open(anchor));assert.equal(await page.locator('textarea').inputValue(),'Keep my draft');

@@ -1,4 +1,4 @@
-// Thales-only browser regression: real Wisdom HTTP API and unmodified WizardApp.
+// Build-worker-only browser regression: real Wisdom HTTP API and unmodified WizardApp.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn}=require('child_process'),{createInterface}=require('readline');
 const fs=require('fs'),path=require('path'),assert=require('assert');

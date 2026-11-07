@@ -126,6 +126,10 @@ def raw_body(key, raw):
 def check_record(key, record, body, contract):
     if not isinstance(record, dict):
         _fail(key + ' receipt is not an object')
+    if record.get('format') in contract.get('forms', {}):
+        contract = dict(contract, **contract['forms'][record['format']])
+    if record.get('collection_rules_sha256', contract['collection_rules']['sha256']) != contract['collection_rules']['sha256']:
+        _fail(key + ' collection rules hash differs from installed release')
     expect = {'chapter_id': key, 'workflow': contract['id'], 'workflow_version': contract['version'],
               'workflow_sha256': contract['workflow_sha256'], 'prompt_sha256': contract['prompt_sha256'],
               'provider': contract['provider'], 'model': contract['model'], 'format': contract['format']}
@@ -148,6 +152,8 @@ def check_record(key, record, body, contract):
         # The runner refuses drafts that fail these shape checks, so a receipted body
         # that fails them was not accepted by the pinned runner (forged or hand-built).
         authoring_contract.validate_structure(body.decode('utf-8'))
+        if authoring_contract.chapter_format(body.decode('utf-8')) != contract['format']:
+            raise ValueError('Receipt format differs from chapter')
     except (ValueError, UnicodeError) as e:
         _fail(key + ' fails the compression v1 checks the pinned runner applies (' + str(e) + '); '
               'a receipt cannot vouch for a draft the runner rejected')
@@ -215,6 +221,12 @@ def assess(files, catalog):
             continue
         body = files['content/' + k + '.md']
         check_record(k, receipts[k], body, contract)
+        if 'collection_rules_sha256' in receipts[k]:
+            entry = next(e for e in catalog['entries'] if e['id'] == k)
+            try:
+                authoring_contract.validate_deck(entry.get('deck', ''), body.decode('utf-8'))
+            except ValueError as e:
+                _fail(k + ' cover teaser rejected (' + str(e) + ')')
         if output_name(k) in files:
             used.add(check_evidence(k, receipts[k], body, files))
             checked.append(k)

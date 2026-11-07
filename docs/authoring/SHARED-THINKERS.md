@@ -27,8 +27,8 @@ reading rows, chapter documents and highlights must not change.
 Run `qa/snapshot_private_library.py` with explicit owner DB/media paths to create
 an owner-only SQLite-backup snapshot and copy only registered immutable bundle
 folders. Never put that snapshot in the source checkout or image. Transfer it to
-the job-owned Thales directory. `qa/run_shared_worker.sh ROOT` must run under the
-original shared `/Volumes/ThalesMedia/AndroidBuilds/worker.lock` using `lockf -k`.
+the job-owned worker directory. `qa/run_shared_worker.sh ROOT` must run under the
+original shared `<shared worker lock path>` using `lockf -k`.
 It records RED against the stipulated base library, tests the updated source in a
 real hardened container, creates independent volumes from the private snapshot,
 and exercises `qa/prove_shared_container.py` plus mobile browser Back contracts.
@@ -38,5 +38,5 @@ The proof preserves all owner rows of reactions, thinkers, positions, dives,
 highlights and requests exactly. On restart the existing engine may seed default
 reaction rows for the six new synthetic chapters; these are counted separately,
 not mislabeled as mutations to owner reading state. Screenshots, private fixtures
-and snapshot receipts remain owner-controlled on Thales. No generation calls,
+and snapshot receipts remain owner-controlled on the worker. No generation calls,
 release, production changes, cron activation or publication are part of this slice.

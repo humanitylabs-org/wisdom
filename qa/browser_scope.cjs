@@ -1,4 +1,4 @@
-// Thales only: actual shared core + isolated synthetic HTTP fixture, no facade stubs.
+// Build worker only: actual shared core + isolated synthetic HTTP fixture, no facade stubs.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn}=require('child_process');
 const {createInterface}=require('readline');
@@ -24,7 +24,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert'),crypto=requ
   await page.locator('[data-wisdom-back]').click();await page.waitForSelector('.wb-home');
   await page.locator('a[data-wisdom-route="/shelf/private"]').click();await page.waitForSelector('.wb-all-grid');
   assert.equal(await page.locator('.wb-all-grid .wb-cover').count(),2);
-  assert.equal(await page.locator('.wb-all-grid [data-wisdom-route="/collection/steve-jobs"]').count(),0);
+  assert.equal(await page.locator('.wb-all-grid [data-wisdom-route="/collection/other-collection"]').count(),0);
   await page.locator('.wb-all-grid [data-wisdom-route="/collection/example-collection"]').click();await page.waitForSelector('.wb-collection');
   await page.locator('[data-export-collection]').click();await page.waitForSelector('[data-confirm-export]');
   assert((await page.locator('.wm-sheet').innerText()).includes('No upload or publication'));

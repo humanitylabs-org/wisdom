@@ -238,10 +238,10 @@
     syncHold();
   }
   // Passage threads discuss a selection; chapter threads (end-of-chapter button) discuss the whole chapter.
-  // One-word commands (James, 22 Oct): the chip's word is exactly what goes into the composer; the server prompt says what each means.
+  // One-word commands (owner request, 22 Oct): the chip's word is exactly what goes into the composer; the server prompt says what each means.
   const STARTERS = {
-    passage: ['Explain, explore, or question this passage.', 'Ask about this passage…', [['Explain', 'Explain this passage in plain language.'], ['Give example', 'Give me a concrete example of the idea in this passage.'], ['Challenge', 'What is the strongest challenge to the idea in this passage?']]],
-    chapter: ['Talk through the whole chapter.', 'Ask about this chapter…', [['Big idea', 'What is the one big idea of this chapter, in plain language?'], ['Apply it', 'How could I apply the idea of this chapter in my own life this week?'], ['Challenge', 'What is the strongest challenge to the argument of this chapter?']]]
+    passage: ['Explain, explore, or question this passage.', 'Ask about this passage…', ['Explain', 'Simplify', 'Example', 'Challenge']],
+    chapter: ['Talk through the whole chapter.', 'Ask about this chapter…', ['Summarize', 'Simplify', 'Apply', 'Challenge']]
   };
   function mode(chapter) {
     if (chapterMode === chapter) return;
@@ -249,7 +249,7 @@
     const [text, placeholder, chips] = STARTERS[chapter ? 'chapter' : 'passage'];
     emptyText.textContent = text; composer.placeholder = placeholder;
     panel.setAttribute('aria-label', chapter ? 'Chapter discussion' : 'Passage discussion');
-    starters.replaceChildren(...chips.map(([label, question]) => button(label, 'wd-chip', () => { if (!composer.value.trim()) { composer.value = question; changed(); } composer.focus({preventScroll:true}); setExpanded(true); })));
+    starters.replaceChildren(...chips.map(word => button(word, 'wd-chip', () => { if (!composer.value.trim()) { composer.value = word; changed(); } composer.focus({preventScroll:true}); setExpanded(true); })));
   }
   const isChapter = t => t?.scope === 'chapter';
   function nearBottom() { return body.scrollHeight - body.clientHeight - body.scrollTop < 88; }
@@ -280,7 +280,7 @@
     if (!chapter && a.highlight_id !== undefined) payload.highlight_id = a.highlight_id;
     return payload;
   }
-  /* Hosted in Wizard, Ask AI is the owner's real Chats thread laid over the reader (James, 22 Oct 2026: "we already
+  /* Hosted in Wizard, Ask AI is the owner's real Chats thread laid over the reader (owner request, 22 Oct 2026: "we already
    * have a fully functional chat interface"): voice into the composer, attachments, models, Stop, queued replies and
    * history all come from Chats. Wisdom only finds (or creates once) the thread for this passage or chapter and hands
    * the passage over as a quoted item riding with the first message. Standalone, or on a shell without the bridge,

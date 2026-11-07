@@ -1,6 +1,6 @@
 // Hosted production acceptance: real shell/assets/reads, owner writes intercepted.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR),assert=require('assert'),fs=require('fs');
-(async()=>{const browser=await chromium.launch({headless:true,channel:'chrome'});const checks=[];try{
+(async()=>{const browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'});const checks=[];try{
  for(const width of [360,412]){
   const ctx=await browser.newContext({viewport:{width,height:915},isMobile:true,hasTouch:true});let snapshot,ratings=[];
   await ctx.route('**/wisdom/api/**',async r=>{if(r.request().method()==='GET')return r.continue();const d=r.request().postDataJSON();if(d?.field==='rating'){ratings.push(d.value);await new Promise(r=>setTimeout(r,800));}return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(snapshot||{})})});

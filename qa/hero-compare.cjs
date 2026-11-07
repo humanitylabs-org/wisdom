@@ -1,9 +1,9 @@
 // Compare the Home top card: private.7 hero (before) vs candidate Continue reading card, in the live Wizard shell.
 // Assets are swapped via route; every non-GET is intercepted. Writes compare.json + screenshots.
 const {chromium,devices}=require(process.env.PLAYWRIGHT_DIR),fs=require('fs'),path=require('path');
-const URL0='https://wizard.tailc0f369.ts.net/wizard-os-home/?open=wisdom',OUT=process.env.OUT;
+const URL0='https://wizard.example.ts.net/wizard-os-home/?open=wisdom',OUT=process.env.OUT;
 (async()=>{
- const browser=await chromium.launch({headless:true,channel:'chrome'}),res={};
+ const browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'}),res={};
  try{for(const variant of ['before','after'])for(const width of [390,360]){
   const ctx=await browser.newContext({...devices['Pixel 7'],viewport:{width,height:915}});
   await ctx.route('**/wisdom/**',async r=>{const q=r.request(),u=new URL(q.url()).pathname;

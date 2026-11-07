@@ -15,7 +15,7 @@ const Wisdom = (() => {
  addEventListener('pagehide',()=>saveOpenRoute());
  function restoreRoute(){
   // Explicit links (including #/ for Home) always take precedence.
-  // Opening Wisdom lands on Home, where Continue reading leads to the last chapter and page (James, 18 Oct).
+  // Opening Wisdom lands on Home, where Continue reading leads to the last chapter and page (owner request, 18 Oct).
   // Only a reload or shell frame recreation within a minute of leaving resumes the open book directly.
   try{localStorage.removeItem(openKey)}catch{}
   if(!location.hash){try{const saved=JSON.parse(sessionStorage.getItem(openKey)||'null');if(saved&&bookRoute(saved.hash)&&Date.now()-saved.at<RESUME_MS)history.replaceState(history.state,'',saved.hash)}catch{}}
@@ -52,7 +52,7 @@ const Wisdom = (() => {
    return `<p>${inline(block).replace(/\n/g,'<br>')}</p>`;
   }).join('');
  }
- // Foreign-language phrases (James, 12 Oct): each glossed phrase gets a thin dotted underline; a tap opens a
+ // Foreign-language phrases (owner request, 12 Oct): each glossed phrase gets a thin dotted underline; a tap opens a
  // popover with the romanisation, an English sound-alike and the meaning. Glosses live in content/glosses.json.
  function glossed(html){
   const g=data.glosses||{},keys=Object.keys(g).filter(k=>k&&g[k]?.en).sort((a,b)=>b.length-a.length);if(!keys.length)return html;
@@ -132,17 +132,17 @@ const Wisdom = (() => {
   const groups=[];for(const h of list){const e=byid.get(h.entry_id);if(!e)continue;let g=groups.find(x=>x.e===e);if(!g)groups.push(g={e,hs:[]});g.hs.push(h)}
   return `<section class="wisdom-library wb-hl-page">${groups.map(({e,hs})=>`<article class="wb-hl-group"><header>${link('/read/'+e.id,`<strong>${esc(e.title)}</strong><span>${esc(dotted(thinker(e).name,short(e)))}</span>`,'wb-hl-src')}</header>${hs.sort((a,b)=>a.start-b.start).map(h=>`<figure class="wb-hl-item" data-highlight-id="${h.id}">${!currentAnchor(h)?`<figcaption class="wb-quiet-note"><strong>Earlier edition</strong><br>${esc((h.reason||'Anchor not verified in current text').replace(/^Earlier edition — /,''))}</figcaption>`:''}<blockquote>${esc(h.text)}</blockquote>${h.note?`<p class="wb-hl-note">${esc(h.note)}</p>`:''}<button class="wb-quiet wz-button secondary" data-wisdom-copy="${h.id}" aria-label="Copy highlight">${icon('copy')}<span>Copy</span></button>${currentAnchor(h)||h.note?`<button class="wb-quiet wz-button secondary" data-wisdom-note="${h.id}" aria-label="${h.note?'Edit note':'Add a note'}">${icon('note')}<span>${h.note?'Edit note':'Note'}</span></button>`:''}${!currentAnchor(h)?`<button class="wb-quiet wz-button secondary" data-wisdom-remove-highlight="${h.id}" aria-label="Remove earlier-edition highlight">Remove</button>`:''}</figure>`).join('')}</article>`).join('')}</section>`;
  }
- // Home (James, 12 Oct): Currently reading → Suggested (+ Browse all) → one Search → Request a new collection.
+ // Home (owner request, 12 Oct): Currently reading → Suggested (+ Browse all) → one Search → Request a new collection.
  const FORMS={book:'Book',thinker:'Thinker',theme:'Theme'};
  const formOf=c=>FORMS[c.form]||'Theme';
  const entryById=id=>data.entries.find(x=>x.id===id);
- // Home (James, 18 Oct): Continue reading (last chapter open, at its page) → Currently reading by most
+ // Home (owner request, 18 Oct): Continue reading (last chapter open, at its page) → Currently reading by most
  // recently opened → Suggested, newest first, with View all. A chapter counts as open from its last page turn
  // or opening (opened_at) or its completion (read_at); finishing one moves that collection to its next chapter.
  const touched=e=>[e?.opened_at,e?.read_at].filter(Boolean).sort().pop()||'';
  const members=c=>c.entries.map(entryById).filter(Boolean);
  const lastTouch=c=>members(c).map(touched).sort().pop()||'';
- // Reaching a chapter's end page (the rating screen) finishes it (James, 19 Oct): synced progress at 100 or this
+ // Reaching a chapter's end page (the rating screen) finishes it (owner request, 19 Oct): synced progress at 100 or this
  // device's saved page at the end both count, so a library snapshot that predates the final page write (the done
  // reply racing the progress write) cannot pull Home back to a chapter he just finished.
  const finished=e=>(Number(e.progress)||0)>=100||spot(e)>=1;
@@ -152,7 +152,7 @@ const Wisdom = (() => {
   return c.next_id?entryById(c.next_id):null;
  }
  const started=c=>(c.read>0||!!lastTouch(c))&&!!resumeOf(c);
- // A collection nobody has opened yet starts at its overview, the entry point written for it (James, 21 Oct):
+ // A collection nobody has opened yet starts at its overview, the entry point written for it (owner request, 21 Oct):
  // Start must never skip the first thing in the collection. Once anything is opened or read, resume as usual.
  const opener=c=>{const o=c&&c.overview&&entryById(c.overview);return o&&!o.read&&!lastTouch(c)?o:null};
  const unstarted=c=>!lastTouch(c)&&(c.overview?!(entryById(c.overview)||{}).read&&!c.done:!c.read);
@@ -165,7 +165,7 @@ const Wisdom = (() => {
  const collectionProgress=c=>{const chapters=c.entries.filter(id=>id!==c.overview).map(entryById).filter(Boolean);return chapters.length?Math.round(100*chapters.reduce((sum,e)=>sum+chapterFraction(e),0)/chapters.length):0};
  // Where this device last stopped in a chapter (falls back to the synced percentage).
  const spot=e=>{let f=(Number(e.progress)||0)/100;try{const v=localStorage.getItem(posKey(e.id));if(v!==null&&Number.isFinite(+v))f=+v}catch{}return Math.max(0,Math.min(1,f))};
- // Same layout as the original Home hero (James, 18 Oct): only the content points at the chapter to resume.
+ // Same layout as the original Home hero (owner request, 18 Oct): only the content points at the chapter to resume.
  function continueCard(){
   const c=readingAll()[0];if(!c)return '';
   const e=resumeOf(c),n=chapNo(e,c),f=spot(e),pct=Math.round(f*100),left=Math.max(1,Math.ceil(e.minutes*(1-f)));
@@ -203,7 +203,7 @@ const Wisdom = (() => {
  function shelf(scope){
   if(!['shared','private'].includes(scope))return missing();
   const title=scope==='shared'?'Shared library':'My library',cols=searchCollections();
-  return `<section class="wb-all-thinkers wb-library-shelf ${query.trim()?'is-searching':''}"><header class="wb-all-top">${backBtn('')}<h1>${title}</h1></header>${searchBox()}<p class="wb-quiet-note">${scope==='shared'?'Approved by your configured source for this private library. Rights and sharing permissions remain separate.':'Your imports and individually requested collections stay private. Downloading a collection does not publish it.'}</p><div class="wb-shelf-body"><div class="wb-all-grid">${cols.map(c=>colCover(c,{form:true})).join('')}</div>${cols.length?'':`<p class="wb-quiet-note">${scope==='shared'?'No approved shared collections yet.':'No private collections enabled yet. Import a bundle to begin.'}</p>`}</div><p>${link('/manage','Manage collections · import or enable a bundle','btn')}</p>${scope==='private'?requestBlock():''}</section>`;
+  return `<section class="wb-all-thinkers wb-library-shelf ${query.trim()?'is-searching':''}"><header class="wb-all-top">${backBtn('')}<h1>${title}</h1></header>${scope==='private'?'<p class="wb-quiet-note" data-offline-failures></p>':''}${searchBox()}<p class="wb-quiet-note">${scope==='shared'?'Approved by your configured source for this private library. Rights and sharing permissions remain separate.':'Your imports and individually requested collections stay private. Downloading a collection does not publish it.'}</p><div class="wb-shelf-body"><div class="wb-all-grid">${cols.map(c=>colCover(c,{form:true})).join('')}</div>${cols.length?'':`<p class="wb-quiet-note">${scope==='shared'?'No approved shared collections yet.':'No private collections enabled yet. Import a bundle to begin.'}</p>`}</div><p>${link('/manage','Manage collections · import or enable a bundle','btn')}</p>${scope==='private'?requestBlock():''}</section>`;
  }
  function libraryTiles(){
   const hs=data.highlights||[];
@@ -268,6 +268,7 @@ const Wisdom = (() => {
   document.documentElement.classList.toggle('wb-open',parseRoute()[1]==='read'&&!!data);if(parseRoute()[1]!=='read')opened='';
   if(!data)return `<section class="wisdom-notice"><h2>${error?'Wisdom couldn’t load':'Opening your library…'}</h2>${error?`<p>${esc(error)}</p><button class="btn wz-button secondary" data-wisdom-retry>Try again</button>`:'<span class="spinner"></span>'}</section>`;
   let [,kind,id]=parseRoute();
+  if(kind==='unsaved')return `<section class="wb-lib-page"><header class="wb-all-top">${backBtn('/shelf/private')}<h1>Unsaved changes</h1></header><p class="wb-quiet-note">These changes are kept on this device.</p><div data-offline-failure-view></div></section>`;
   if(kind==='manage')return CollectionManager.render();
   if(kind==='shelf')return shelf(id);
   if(!kind&&!data.entries.length)return `<section class="wisdom-notice"><h2>Nothing on the shelves yet.</h2><p>Add a collection from a bundle file, or enable one from your configured source.</p>${(data.notices||[]).map(n=>`<p>${esc(n)}</p>`).join('')}${link('/manage','Open Library','btn')}</section>${shelfLinks()}${requestBlock()}`;
@@ -306,6 +307,7 @@ const Wisdom = (() => {
   }
   if(kind==='read'){
    const e=data.entries.find(e=>e.id===id);if(!e)return missing();
+   if(typeof e.body!=='string')return `<section class="wisdom-notice">${link(readerParent(),'Back to collection','btn')}<h2>${esc(e.title)}</h2><p>${esc(chapterErrors.get(e.id)||'Opening this chapter…')}</p><button class="btn" data-wisdom-chapter-retry="${esc(e.id)}">Try again</button></section>`;
    const t=thinker(e),col=colOf(e,parseRoute()[3]),index=col?col.entries.indexOf(e.id):-1,next=col?data.entries.find(x=>x.id===col.entries[index+1]):null,prev=col&&index>0?data.entries.find(x=>x.id===col.entries[index-1]):null,n=chapNo(e,col);
    const home=readerParent(),homeName=col?bookTitle(col)[1]:t.name;
    let body=e.body.replace(/^# [^\n]+\n+/,'').replace(/^\*[^*\n]+\*\s*\n+/,'');
@@ -314,19 +316,82 @@ const Wisdom = (() => {
    const count=e.dive_of?'Deep dive':n?`Chapter ${n} of ${col.count}`:short(e,col);
    const end=next?link(readLink(next,col),`${img(art(next),'wb-next-art')}<span class="wb-hero-shade"></span><span class="wb-next-copy"><small>${esc(dotted('Next',short(next,col),col&&col.thinkers.length>1?thinker(next).name:''))}</small><strong>${esc(next.title)}</strong><span class="wb-primary">Keep reading →</span></span>`,'wb-next" data-wisdom-replace="1'):link(home,`Back to ${esc(homeName)}`,'wb-back-quiet" data-wisdom-replace="1');
       const rate=`<div class="wb-rate" role="group" aria-label="Rate this chapter"><span class="wb-rate-q">How was it?</span><div class="wb-rate-btns"><button class="wb-thumb ${e.rating===1?'on':''} wz-icon-button" data-wisdom-rate="${esc(e.id)}" data-value="1" aria-pressed="${e.rating===1}" aria-label="Thumbs up">${icon('up')}</button><button class="wb-thumb ${e.rating===-1?'on':''} wz-icon-button" data-wisdom-rate="${esc(e.id)}" data-value="-1" aria-pressed="${e.rating===-1}" aria-label="Thumbs down">${icon('down')}</button></div></div>`;
-   // James, 18 Oct: every chapter ends with a whole-chapter AI discussion.
+   // owner request, 18 Oct: every chapter ends with a whole-chapter AI discussion.
+   // Go deeper (owner request, 23 Oct): a chapter in a multi-thinker collection (a sampler such as The wisdom of the Stoics)
+   // offers that thinker's own collection, so a reader who resonates with one voice can read the full compression.
+   const deep=col&&col.thinkers.length>1?data.collections.filter(c=>c.id!==col.id&&c.thinkers.length===1&&c.thinkers[0]===t.id&&c.count>0).sort((a,b)=>String(b.added_at||'').localeCompare(String(a.added_at||''))||a.title.localeCompare(b.title))[0]:null;
+   const deeper=deep?link('/collection/'+deep.id,`${colArt(deep,'wb-go-art')}<span class="wb-go-copy"><small>Go deeper · ${esc(t.name)}</small><strong>${esc(deep.title)}</strong><span>${esc(dotted(plural(deep.count,'chapter'),deep.read&&!deep.next_id?'Finished':deep.read?`${deep.read} read`:''))}</span></span><b>→</b>`,'wb-deeper wb-go-deeper" data-wisdom-go-deeper="'+esc(deep.id)):'';
    const discuss=`<button class="wb-deeper wb-discuss wz-button secondary" type="button" data-wisdom-discuss-chapter="${esc(e.id)}">${window.WisdomDiscussion?.hasChapter?.(e.id,e.body_sha256)?'Continue discussion':'Discuss with AI'} <b>→</b></button>`;
    const quiet=`<div class="wb-end-quiet"><button class="wb-quiet ${e.saved?'on':''} wz-button secondary" data-wisdom-entry="${esc(e.id)}" data-field="saved" aria-pressed="${e.saved}" aria-label="${e.saved?'Unstar':'Star'} ${esc(e.title)}">${icon('star')}<span>${e.saved?'Starred':'Star'}</span></button><a class="wb-quiet wz-button secondary" href="${esc(e.source_url)}" target="_blank" rel="noopener noreferrer">Source ↗</a></div>`;
-   return `<article class="wisdom-reader wb-reader" data-read="${esc(id)}" data-body-sha256="${esc(e.body_sha256)}" data-size="${size}"${prev?` data-prev-route="${esc(readLink(prev,col))}"`:''}><header class="wb-top">${link(home,'‹','wb-round" data-wisdom-reader-back="1" aria-label="Back')}<div class="wb-top-title"><strong>${esc(t.name)}</strong><span>${esc(dotted(count,e.title))}</span></div><button class="wb-round wz-icon-button" data-wisdom-discussions="${esc(id)}" aria-label="Chapter discussions" title="Discussions">${icon('spark')}</button><div class="wisdom-size" role="group" aria-label="Text size"><button class="wb-round wz-icon-button" data-wisdom-size="-1" aria-label="Smaller text" ${size<=0?'disabled':''}>A−</button><button class="wb-round wz-icon-button" data-wisdom-size="1" aria-label="Larger text" ${size>=3?'disabled':''}>A+</button></div></header><button class="wb-turn wb-turn-prev wz-icon-button" type="button" data-wisdom-turn="-1" aria-label="Previous page" title="Previous page (←)">‹</button><button class="wb-turn wb-turn-next wz-icon-button" type="button" data-wisdom-turn="1" aria-label="Next page" title="Next page (→)">›</button><div class="wb-stage"><div class="wb-track"><section class="wb-slide wb-opener">${img(art(e),'wb-opener-art')}<span class="wb-hero-shade"></span><div class="wb-opener-copy"><small>${esc(dotted(col&&col.thinkers.length>1?col.title:t.name,count))}</small><h1>${esc(e.title)}</h1><p>${esc(e.deck)}</p><span class="wb-swipe">${e.minutes} min · <span class="wb-touch-hint">Swipe to begin</span><span class="wb-mouse-hint">Begin</span> <b>→</b></span></div></section>${epigraph}<div class="wb-flow wisdom-body">${glossed(markdown(body))}<span class="wb-sentinel"></span></div><section class="wb-slide wb-end"><div class="wb-end-head"><small>${esc(dotted('✓ Finished',count))}</small><h2>${esc(e.title)}</h2></div>${rate}${discuss}${end}${quiet}</section></div></div><footer class="wb-foot"><div class="wb-bar"><span></span></div><div class="wb-foot-row"><span class="wb-count" aria-live="polite"></span><span class="wb-left"></span></div></footer><div class="wb-hlpop" role="toolbar" aria-label="Highlight" hidden><button data-hl-act="highlight" hidden class="wz-button secondary"><span class="wb-swatch"></span>Highlight</button><button data-hl-act="note" class="wz-button secondary">Note</button><button data-hl-act="copy" class="wz-button secondary">${icon('copy')}Copy</button><button data-hl-act="lookup" class="wz-button secondary">${icon('search')}Look up</button><button data-hl-act="ask" class="wz-button secondary">Ask AI</button><button data-hl-act="remove" class="wz-button secondary"><span class="wb-swatch off"></span>Remove<span class="wb-wide"> highlight</span></button></div><span class="wb-handle s" hidden aria-hidden="true"></span><span class="wb-handle e" hidden aria-hidden="true"></span><div class="wb-glosspop" role="dialog" aria-label="Translation" hidden></div></article>`;
+   return `<article class="wisdom-reader wb-reader" data-read="${esc(id)}" data-body-sha256="${esc(e.body_sha256)}" data-size="${size}"${prev?` data-prev-route="${esc(readLink(prev,col))}"`:''}><header class="wb-top">${link(home,'‹','wb-round" data-wisdom-reader-back="1" aria-label="Back')}<div class="wb-top-title"><strong>${esc(t.name)}</strong><span>${esc(dotted(count,e.title))}</span></div><button class="wb-round wz-icon-button" data-wisdom-discussions="${esc(id)}" aria-label="Chapter discussions" title="Discussions">${icon('spark')}</button><div class="wisdom-size" role="group" aria-label="Text size"><button class="wb-round wz-icon-button" data-wisdom-size="-1" aria-label="Smaller text" ${size<=0?'disabled':''}>A−</button><button class="wb-round wz-icon-button" data-wisdom-size="1" aria-label="Larger text" ${size>=3?'disabled':''}>A+</button></div></header><button class="wb-turn wb-turn-prev wz-icon-button" type="button" data-wisdom-turn="-1" aria-label="Previous page" title="Previous page (←)">‹</button><button class="wb-turn wb-turn-next wz-icon-button" type="button" data-wisdom-turn="1" aria-label="Next page" title="Next page (→)">›</button><div class="wb-stage"><div class="wb-track"><section class="wb-slide wb-opener">${img(art(e),'wb-opener-art')}<span class="wb-hero-shade"></span><div class="wb-opener-copy"><small>${esc(dotted(col&&col.thinkers.length>1?col.title:t.name,count))}</small><h1>${esc(e.title)}</h1><p>${esc(e.deck)}</p><span class="wb-swipe">${e.minutes} min · <span class="wb-touch-hint">Swipe to begin</span><span class="wb-mouse-hint">Begin</span> <b>→</b></span></div></section>${epigraph}<div class="wb-flow wisdom-body">${glossed(markdown(body))}<span class="wb-sentinel"></span></div><section class="wb-slide wb-end"><div class="wb-end-head"><small>${esc(dotted('✓ Finished',count))}</small><h2>${esc(e.title)}</h2></div>${rate}${deeper}${discuss}${end}${quiet}</section></div></div><footer class="wb-foot"><div class="wb-bar"><span></span></div><div class="wb-foot-row"><span class="wb-count" aria-live="polite"></span><span class="wb-left"></span></div></footer><div class="wb-hlpop" role="toolbar" aria-label="Highlight" hidden><button data-hl-act="highlight" hidden class="wz-button secondary"><span class="wb-swatch"></span>Highlight</button><button data-hl-act="note" class="wz-button secondary">Note</button><button data-hl-act="copy" class="wz-button secondary">${icon('copy')}Copy</button><button data-hl-act="lookup" class="wz-button secondary">${icon('search')}Look up</button><button data-hl-act="ask" class="wz-button secondary">Ask AI</button><button data-hl-act="remove" class="wz-button secondary"><span class="wb-swatch off"></span>Remove<span class="wb-wide"> highlight</span></button></div><span class="wb-handle s" hidden aria-hidden="true"></span><span class="wb-handle e" hidden aria-hidden="true"></span><div class="wb-glosspop" role="dialog" aria-label="Translation" hidden></div></article>`;
   }
   return missing();
  }
  function missing(){return `<div class="wisdom-notice"><h2>That read isn’t in Wisdom</h2>${link('','Back to your library')}</div>`}
+ const chapterLoads=new Map(),chapterErrors=new Map(),editionRecoveries=new Set();
+ let refreshTimer=null,viewPending=false,viewObserver=null;
+ const visibleSurfaces='.wb-sheet,.wm-sheet,.wd-sheet,.wd-overlay:not([hidden])';
+ function waitForSurface(){
+  viewPending=true;if(viewObserver)return;
+  viewObserver=new MutationObserver(()=>{if(!document.querySelector(visibleSurfaces)){viewObserver.disconnect();viewObserver=null;setTimeout(repaintLoaded,0)}});
+  viewObserver.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+ }
+ function repaintLoaded(){
+  if(!active())return;
+  if(document.querySelector(visibleSurfaces)){waitForSurface();return}
+  // Keep the actual editor, selection and IME session alive, not a recreated input.
+  if(document.activeElement?.matches('input,textarea,[contenteditable="true"]')&&!document.activeElement.closest('[hidden]')){viewPending=true;return}
+  viewPending=false;
+  const r=reader(),entry=data.entries.find(e=>e.id===r?.dataset.read);
+  if(r&&entry?.body_sha256===r.dataset.bodySha256)paint(r);
+  else{const y=window.scrollY;window.renderWisdom();window.scrollTo(0,y)}
+  void hydrateChapter();
+ }
+ document.addEventListener('focusout',()=>{if(viewPending)setTimeout(repaintLoaded,0)});
+ function retryRefresh(){
+  if(refreshTimer!==null)return;
+  refreshTimer=setTimeout(()=>{refreshTimer=null;if(active()&&!document.hidden&&navigator.onLine!==false)void load();else retryRefresh()},30000);
+ }
+ async function hydrateChapter(){
+  const [,kind,id]=parseRoute(),entry=data?.entries?.find(e=>e.id===id);
+  if(kind!=='read'||!entry||typeof entry.body==='string'||chapterLoads.has(id))return;
+  const expected=entry.body_sha256;chapterErrors.delete(id);let recover=false;
+  const pending=api('wisdom/chapter/'+encodeURIComponent(id)).then(d=>{
+   const current=data?.entries?.find(e=>e.id===id);
+   if(!current)return;
+   if(current.body_sha256!==expected){recover=true;return}
+   if(d.body_sha256!==expected){
+    chapterErrors.set(id,'This chapter was updated. Reopen it or try again.');
+    const key=id+':'+expected;if(!editionRecoveries.has(key)){editionRecoveries.add(key);recover=true}
+    return;
+   }
+   if(typeof d.body!=='string')throw Error('Chapter text unavailable. Try again.');
+   current.body=d.body;data.glosses={...data.glosses,...d.glosses};
+  }).catch(e=>chapterErrors.set(id,e.message)).finally(()=>{
+   chapterLoads.delete(id);if(parseRoute()[1]==='read'&&parseRoute()[2]===id&&!reader())window.renderWisdom();
+   if(recover){if(data?.entries?.find(e=>e.id===id)?.body_sha256!==expected)void hydrateChapter();else void load()}
+  });chapterLoads.set(id,pending);
+ }
+ function showLoaded(d){
+  // A metadata refresh validates cached editions even online. Carry readable
+  // bytes only across an exact hash match; absent entries really disappeared.
+  const old=new Map((data?.entries||[]).map(e=>[e.id,e]));
+  if(d.metadata_only){d.requests=data?.requests||d.requests;for(const e of d.entries){const was=old.get(e.id);if(was?.body_sha256===e.body_sha256&&typeof was.body==='string')e.body=was.body}d.glosses={...data?.glosses,...d.glosses}}
+  for(const e of d.entries){const pending=ratingWrites.get(e.id);if(pending)e.rating=pending.desired}
+  data=d;validateOpenRoute();repaintLoaded();
+ }
  async function load({restore=false}={}){
-  const mine=++serial;loading=true;error='';if(active())window.renderWisdom();
-  try{const d=await api('wisdom');if(mine!==serial)return;data=d;validateOpenRoute();}
-  catch(e){if(mine!==serial)return;error=e.message;}
-  finally{if(mine===serial){loading=false;if(active()){window.renderWisdom();if(restore)window.scrollTo(0,scrolls.get(location.hash)||0);}}}
+  const mine=++serial;loading=true;error='';if(!data)window.renderWisdom();
+  try{
+   // Publish the existing projected replica immediately, including pending edits.
+   if(!data){const cached=await window.WisdomOffline?.projected().catch(()=>null);if(mine!==serial)return;if(cached)showLoaded(cached)}
+   // Metadata is best-effort, including against an older rolled-back server.
+   try{const meta=await api('wisdom/metadata');if(mine!==serial)return;showLoaded(meta)}catch{if(mine!==serial)return}
+   const d=await api('wisdom');if(mine!==serial)return;showLoaded(d);
+   if(refreshTimer!==null){clearTimeout(refreshTimer);refreshTimer=null}window.WisdomOffline?.refreshFailed?.(false);
+  }
+  catch(e){if(mine!==serial)return;if(!data)error=e.message;else{window.WisdomOffline?.refreshFailed?.(true);retryRefresh()}}
+  finally{if(mine===serial){loading=false;if(active()&&!data)window.renderWisdom()}}
  }
  function remember(){if(currentRoute)scrolls.set(currentRoute,window.scrollY)}
  function enter({restore=false}={}){
@@ -337,7 +402,7 @@ const Wisdom = (() => {
   const [,kind,entryId]=parseRoute();
   window.dispatchEvent(new CustomEvent('wisdom:route',{detail:{entry_id:kind==='read'?entryId:undefined}}));
   saveOpenRoute();
-  window.renderWisdom();if(data){window.scrollTo(0,restore?(scrolls.get(currentRoute)||0):0);refreshDay()}else load({restore});
+  window.renderWisdom();if(data){window.scrollTo(0,restore?(scrolls.get(currentRoute)||0):0);void hydrateChapter();refreshDay()}else load({restore});
  }
  function refreshDay(){if(active()&&(['','#','#/'].includes(location.hash)||location.hash.startsWith('#/library/'))&&data&&!loading&&data.day!==new Intl.DateTimeFormat('en-CA',{timeZone:data.timezone||'UTC',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()))load()}
  function navigate(path='',{replace=false}={}){
@@ -392,8 +457,15 @@ const Wisdom = (() => {
  // Sheets own one history entry: Back (or Cancel/Done, which call history.back) closes the sheet and stays put.
  window.addEventListener('popstate',ev=>{const sh=document.querySelector('.wb-sheet');if(sh||sheetPop){sh?.remove();sheetPop=false;if(noteState)noteClosed();ev.stopImmediatePropagation()}},true);
  function closeSheet(){if(sheetPop)history.back();else{document.querySelector('.wb-sheet')?.remove();if(noteState)noteClosed()}}
- // Request a new collection (James, 12 Oct): stored by Wisdom first, then handed to your Wizard to build.
- let reqState={phase:'form',text:'',seq:null,error:''};
+ // Request a new collection (owner request, 12 Oct): stored by Wisdom first, then handed to your Wizard to build.
+ const requestDraftKey='wisdom:'+new URL('.',location.href).pathname+':request-draft-v1';
+ function readRequestDraft(){try{const d=JSON.parse(localStorage.getItem(requestDraftKey)||'null');return typeof d?.text==='string'?d.text.slice(0,2000):''}catch{return ''}}
+ let reqState={phase:'form',text:readRequestDraft(),seq:null,error:''};
+ function keepRequestDraft(){
+  if(reqState.phase==='sending')return false;
+  const text=reqState.phase==='sent'||reqState.seq?'':reqState.text;
+  try{if(text)localStorage.setItem(requestDraftKey,JSON.stringify({text}));else localStorage.removeItem(requestDraftKey);return readRequestDraft()===text?'kept':false}catch{return false}
+ }
  function sheetHtml(){
   const s=reqState;
   if(s.phase==='sent')return `<div class="wb-sheet-card" role="dialog" aria-modal="true" aria-label="Request sent"><small>Requested</small><h3>Your Wizard is on it</h3><p class="wb-req-ok">Requested. Your Wizard is building it; review and enable the staged collection in Library when ready.</p><blockquote class="wb-req-quote">${esc(s.text)}</blockquote><div class="wb-sheet-actions"><button class="wb-primary wz-button" data-sheet-close>Done</button></div></div>`;
@@ -401,8 +473,15 @@ const Wisdom = (() => {
   const busy=s.phase==='sending';
   return `<div class="wb-sheet-card" role="dialog" aria-modal="true" aria-label="Request a new collection"><small>Request</small><h3>Request a new collection</h3><p>What do you want to read? A topic, a thinker, a book, a question. Your Wizard can build it when collection generation is configured.</p><div class="wb-req-field"><textarea id="wb-req-text" rows="4" maxlength="2000" placeholder="e.g. Nāgārjuna and emptiness, for a beginner" ${busy?'disabled':''}>${esc(s.text)}</textarea></div><div class="wb-sheet-actions"><button class="wb-sheet-cancel wz-button secondary" data-sheet-close>Cancel</button><button class="wb-primary wz-button" data-req-send ${busy?'disabled':''}>${busy?'Sending…':'Send'}</button></div></div>`;
  }
- let updateHold=null;
- function syncUpdateHold(){const unsaved=writing||ratingWrites.size>0||noteDirty()||reqState.phase==='sending'||(!reqState.seq&&reqState.phase!=='sent'&&!!reqState.text.trim());if(unsaved&&!updateHold)updateHold=WizardApp.update.hold('Wisdom unsaved request or note');else if(!unsaved&&updateHold){updateHold.release();updateHold=null}}
+ let updateHold=null,requestDraftHold=null;
+ function syncUpdateHold(){
+  const reason=writing||ratingWrites.size>0||noteState?.busy?'Wisdom saving':reqState.phase==='sending'?'Wisdom sending':noteDirty()?'Wisdom unsaved note':'';
+  updateHold?.release();updateHold=reason?WizardApp.update.hold(reason):null;
+  // Each edit reacquires its hold: a previous keep acknowledgement never covers new text.
+  requestDraftHold?.release();requestDraftHold=null;
+  if(reqState.phase!=='sending')keepRequestDraft();
+  if(!reqState.seq&&reqState.phase!=='sent'&&!!reqState.text)requestDraftHold=WizardApp.update.hold('Wisdom unsent request',{keep:keepRequestDraft});
+ }
  function paintSheet(){
   syncUpdateHold();
   const sh=document.querySelector('.wb-sheet');if(!sh)return;sh.innerHTML=sheetHtml();
@@ -418,10 +497,10 @@ const Wisdom = (() => {
   try{history.pushState(history.state,'',location.href);sheetPop=true}catch{}
   paintSheet();const ta=sh.querySelector('#wb-req-text');if(ta&&!text)ta.focus();
  }
- // Note (James, 18 Oct): a typed comment on a passage. The note field is an ordinary text field,
+ // Note (owner request, 18 Oct): a typed comment on a passage. The note field is an ordinary text field,
 // so the Wizard orb dictates straight into it when it is focused; Wisdom itself ships no microphone.
 let noteState=null;const noteDrafts=new Map();
-const noteKey=a=>a.id>0?'h'+a.id:(a.entry||'')+':'+a.start+':'+a.end;
+const noteKey=a=>a.id?'h'+a.id:(a.entry||'')+':'+a.start+':'+a.end;
 function noteDirty(){return !!noteState&&(noteState.busy||noteState.value.trim()!==noteState.note.trim())}
 function noteHtml(){
  const a=noteState,has=!!a.note,can=!a.busy&&a.value.trim()!==a.note.trim();
@@ -455,7 +534,7 @@ async function saveNote(value){
  a.busy=true;a.error='';paintNote();
  try{
   let d;
-  if(a.id>0)d=await api('wisdom/highlight',{action:'note',id:a.id,note});
+  if(a.id)d=await api('wisdom/highlight',{action:'note',id:a.id,note});
   else{
    // A fresh selection is saved as a highlight together with its note; overlaps merge server-side, keeping notes.
    const r=a.r,m=merged(r,a.start,a.end),text=textFor(flowOf(r),m.s,m.e);
@@ -514,6 +593,19 @@ async function postRequest(body){
  const posKey=id=>'wisdom:'+new URL('.',location.href).pathname+':pos:'+id;
  const CTL_SLOP=24;let page=0,pages=1,pageW=0,textFrom=0,textPages=1,drag=null,suppressClick=false,textAnchor=null,mouseSel=null,lastPointer='',wheelAcc=0,wheelLock=0,wheelIdle=0;
  function reader(){return document.querySelector('.wb-reader')}
+ let layoutGeneration=0;
+ // Font swaps move the last column without resizing the fixed-size flow.
+ // An already-resolved fonts.ready captured before layout misses that load.
+ function refitAfterFonts(r,generation){
+  if(generation!==layoutGeneration||reader()!==r||!r.isConnected||r.dataset.discussionFrozen||!(pageW>0))return;
+  const flow=r.querySelector('.wb-flow'),s=flow?.querySelector('.wb-sentinel');if(!s)return;
+  const left=s.getBoundingClientRect().left-flow.getBoundingClientRect().left;
+  if(Math.max(1,Math.floor(left/pageW)+1)===textPages&&r.querySelector('.wb-stage').clientWidth===pageW)return;
+  layout(true);
+ }
+ const fontsSettled=()=>{const r=reader();if(r)refitAfterFonts(r,layoutGeneration)};
+ document.fonts?.addEventListener?.('loadingdone',fontsSettled);
+ document.fonts?.addEventListener?.('loadingerror',fontsSettled);
  // Character offset of the first word that starts on the text page in view (a word hyphenated across the
  // page break belongs to the previous page). Kept until the page turns.
  function rememberLine(r){
@@ -527,7 +619,7 @@ async function postRequest(body){
   const r=reader();if(!r||r.dataset.discussionFrozen)return;const stage=r.querySelector('.wb-stage'),flow=r.querySelector('.wb-flow'),track=r.querySelector('.wb-track');
   // Relayouts (full screen, rotation, text size) keep the line you were reading: anchor on the first word of the
   // text page in view and land on whichever new page holds it. Repeated relayouts without a page turn reuse the
-  // same anchor, so entering and leaving full screen returns to the same page (James, 19 Oct 2026).
+  // same anchor, so entering and leaving full screen returns to the same page (owner request, 19 Oct 2026).
   const wasText=keep&&pageW>0&&page>=textFrom&&page<textFrom+textPages,wasEnd=keep&&page>=pages-1&&pages>1,wasLead=keep&&page<textFrom;
   let anchor=null;
   if(wasText)anchor=rememberLine(r);
@@ -535,7 +627,11 @@ async function postRequest(body){
   if(glossOpen())closeGloss();
   // Relayouts (fonts arriving, resize) keep the exact reading fraction; re-deriving it from a rounded page drifted forward a page.
   const exact=keep&&exactFrac&&exactFrac.page===page,frac=keep&&pages>1?(exact?exactFrac.f:page/(pages-1)):null;
-  const W=stage.clientWidth,H=stage.clientHeight;pageW=W;
+  const W=stage.clientWidth,H=stage.clientHeight;
+  // A pinned/closing frame can have zero width during resize or font reflow.
+  // Do not turn its geometry into Infinity/NaN or overwrite the saved reading place.
+  if(W<=0||H<=0||!Number.isFinite(W)||!Number.isFinite(H))return;
+  pageW=W;
   const P=W>760?Math.round((W-660)/2):Math.max(matchMedia('(hover:hover) and (pointer:fine)').matches?58:24,Math.round(W*.075));// desktop: room for the edge arrows
   const T=r.querySelector('.wb-top').offsetHeight+6,B=r.querySelector('.wb-foot').offsetHeight+18;
   flow.style.cssText=`width:${W}px;height:${H}px;padding:${T}px ${P}px ${B}px;column-width:${W-2*P}px;column-gap:${2*P}px;column-fill:auto`;
@@ -546,7 +642,7 @@ async function postRequest(body){
   textFrom=r.querySelectorAll('.wb-track>.wb-slide:not(.wb-end)').length;
   pages=textFrom+textPages+1;
   let anchored=null;
-  if(anchor!==null){hlWords=null;const w=words().find(w=>w.e>anchor);if(w){page=textFrom+Math.max(0,Math.min(textPages-1,Math.floor((w.rects[0].l+1)/W)));exactFrac=null;anchored=anchor}}
+  if(anchor!==null){hlWords=null;const w=words().find(w=>w.e>anchor);if(w){page=textFrom+Math.max(0,Math.min(textPages-1,Math.floor((w.rects[0].l+1)/W)));exactFrac=exact&&Math.round(frac*(pages-1))===page?{f:frac,page}:null;anchored=anchor}}
   if(anchored!==null);
   else if(wasEnd){page=pages-1;exactFrac=null}
   else if(wasLead){exactFrac=null}
@@ -558,7 +654,7 @@ async function postRequest(body){
  }
  function go(n,animate=true,selectionTurn=false){
   if(!selectionTurn)cancelSelectionDrag();
-  const r=reader();if(!r)return;const track=r.querySelector('.wb-track');
+  const r=reader();if(!r||!Number.isFinite(n)||!Number.isFinite(pages)||pages<1||pageW<=0)return;const track=r.querySelector('.wb-track');
   const to=Math.max(0,Math.min(pages-1,n));if(textAnchor&&(textAnchor.page!==to||textAnchor.read!==r.dataset.read))textAnchor=null;if(to!==page&&hlAct&&!selectionTurn)deactivate();if(to!==page&&glossOpen())closeGloss();page=to;
   track.style.transition=animate?'transform .34s cubic-bezier(.2,.8,.2,1)':'none';
   track.style.transform=`translate3d(${-page*pageW}px,0,0)`;
@@ -573,28 +669,28 @@ async function postRequest(body){
   const keepExact=exactFrac&&exactFrac.page===page;
   try{localStorage.setItem(posKey(e.id),String(keepExact?exactFrac.f:pages>1?page/(pages-1):0))}catch{}
   if(!keepExact)exactFrac=null;
-  if(e.progress!==progress||opened!==e.id){opened=e.id;e.progress=progress;e.opened_at=new Date().toISOString();const prior=positionWrites.get(e.id)||Promise.resolve();const next=prior.catch(()=>{}).then(()=>api('wisdom/reaction',{kind:'entry',id:e.id,field:'progress',value:progress})).catch(()=>toast('Reading position is saved on this device, but could not sync to Wisdom.'));positionWrites.set(e.id,next)}
+  if(e.progress!==progress||opened!==e.id){opened=e.id;e.progress=progress;e.opened_at=new Date().toISOString();const prior=positionWrites.get(e.id)||Promise.resolve();const next=prior.catch(()=>{}).then(()=>api('wisdom/reaction',{kind:'entry',id:e.id,field:'progress',value:progress})).catch(()=>{/* Background sync: the outbox keeps it and retries; never interrupt reading (owner request, 26 Oct 2026). */});positionWrites.set(e.id,next)}
   if(page>=pages-1&&!(e.read&&e.archived)&&!writing){const was=[e.read,e.archived];e.read=e.archived=true;api('wisdom/reaction',{kind:'entry',id:e.id,field:'done',value:true}).then(d=>{data=mergeRatingState(d)}).catch(()=>{[e.read,e.archived]=was})}
  }
  function step(d){
   const r=reader();if(!r)return;
   if(d>0&&page>=pages-1){const n=r.querySelector('.wb-next');if(n)navigate(n.dataset.wisdomRoute,{replace:true});return}
-  // Back from a chapter's cover turns to the previous chapter's last page (James, 18 Oct).
+  // Back from a chapter's cover turns to the previous chapter's last page (owner request, 18 Oct).
   if(d<0&&page===0&&r.dataset.prevRoute){const to=r.dataset.prevRoute;landEnd=to.split('/')[2]||'';navigate(to,{replace:true});return}
   go(page+d);
  }
- // Kindle-style highlights (James, 10 Oct). A highlight is a [start,end) character range in the reading's
+ // Kindle-style highlights (owner request, 10 Oct). A highlight is a [start,end) character range in the reading's
  // rendered text, so it survives text-size changes and re-pagination. Wisdom draws its own selection: the
  // native one is off, so Android's Copy/Translate/Select-all toolbar never appears. Long-press a word and
  // drag; lifting the finger on five words or more saves the highlight at once (no extra tap). Fewer words
  // (a single long-pressed word, a short phrase) stay a plain selection, drawn blue, with Highlight / Copy /
- // Search (James, 12 Oct). Tap a highlight to get drag handles that grow or shrink it word by word, plus
+ // Search (owner request, 12 Oct). Tap a highlight to get drag handles that grow or shrink it word by word, plus
  // Copy, Search and Remove highlight. Search opens Wizard Search on its own desk beside Wisdom.
  const HL_MIN=5;
  const flowOf=r=>r?.querySelector('.wb-flow');
 // Keep existing body offsets stable. The opening quote occupies the range AFTER
 // the body in the highlight index, although its slide appears before it visually.
-// The cover title and summary come after the quote (James, 18 Oct: every reader word is selectable).
+// The cover title and summary come after the quote (owner request, 18 Oct: every reader word is selectable).
 const HL_ROOTS='.wb-flow,.wb-epigraph blockquote,.wb-opener-copy h1,.wb-opener-copy p';
 const highlightRoots=r=>[flowOf(r),r?.querySelector('.wb-epigraph blockquote'),r?.querySelector('.wb-opener-copy h1'),r?.querySelector('.wb-opener-copy p')].filter(Boolean);
 function highlightNodes(flow){
@@ -761,7 +857,7 @@ function highlightNodes(flow){
   return best;
  }
  function deactivate(){if(!hlAct)return;hlAct=null;const r=reader();hidePop();if(r)paint(r)}
- // A short selection: shown with handles and the pop-up, saved only if James taps Highlight.
+ // A short selection: shown with handles and the pop-up, saved only if the reader taps Highlight.
  function select(r,s,e){hlAct={id:'sel',pending:true,start:s,end:e};paint(r);showActive()}
  // Look up always explains this passage with the independent fast AI route.
  // The explanation streams into the popover; only the validated final text is kept.
@@ -864,7 +960,7 @@ function highlightNodes(flow){
     // A highlight carrying a note needs a second tap: removing it deletes the note too.
     if((data.highlights||[]).find(x=>x.id===cur.id)?.note&&p.dataset.confirm!==String(cur.id)){p.dataset.confirm=String(cur.id);b.innerHTML='<span class="wb-swatch off"></span>Remove highlight and note?';showActive();return}
     const before=data.highlights;data.highlights=before.filter(h=>h.id!==cur.id);hlAct=null;paint(r);hidePop();
-    try{if(cur.id>0){const d=await api('wisdom/highlight',{action:'remove',id:cur.id});data.highlights=d.highlights;if(reader()===r)paint(r)}toast('Highlight removed.')}
+    try{if(cur.id){const d=await api('wisdom/highlight',{action:'remove',id:cur.id});data.highlights=d.highlights;if(reader()===r)paint(r)}toast('Highlight removed.')}
     catch(err){data.highlights=before;if(reader()===r)paint(r);toast('Couldn’t remove it. Try again.')}
    }
   };
@@ -957,14 +1053,14 @@ function highlightNodes(flow){
   stage.ondragstart=ev=>ev.preventDefault();
   // A page swipe can start anywhere on the stage, including on a button, link or card, and follows the
   // same direction rule as text (more sideways than up/down), so a diagonal thumb swipe works everywhere
-  // (James, 19 Oct: a ~40° swipe from Discuss with AI or the Next card did nothing). Controls only need a
+  // (owner request, 19 Oct: a ~40° swipe from Discuss with AI or the Next card did nothing). Controls only need a
   // few px more travel so finger jitter stays a tap; once it is a swipe the control's click is swallowed.
   // A real thumb rolls 10-20px sideways while pressing a button, so a press that starts on a control must
-  // travel 24px before it becomes a swipe (James, 20 Oct: thumbs up/down needed two taps; at 10px the first
+  // travel 24px before it becomes a swipe (owner request, 20 Oct: thumbs up/down needed two taps; at 10px the first
   // press was taken as a swipe and its click swallowed). Real swipes travel far more, so they still turn the page.
   // A glossed term (role=button) is still reader text: a tap translates it, a long press selects it,
-  // including a glossed drop cap such as 道 opening a section (James, 19 Oct).
-  // Desktop (James, 19 Oct: "follow Kindle"): a mouse never swipes. Press and drag over text selects it word by
+  // including a glossed drop cap such as 道 opening a section (owner request, 19 Oct).
+  // Desktop (owner request, 19 Oct: "follow Kindle"): a mouse never swipes. Press and drag over text selects it word by
   // word at once (no long press); a double-click selects one word. Pages turn with the edge arrows, the arrow
   // keys and the scroll wheel or trackpad; a plain click on text never turns the page. Touch is unchanged.
   stage.onpointerdown=ev=>{lastPointer=ev.pointerType;mouseSel=null;if(ev.button||ev.target.closest('input,textarea,select,[contenteditable]')){drag=null;return}
@@ -1016,8 +1112,11 @@ function highlightNodes(flow){
   r.querySelectorAll('.wb-flow h2').forEach(h=>{if(/^sources$/i.test(h.textContent.trim())){h.classList.add('wb-sources-h');let n=h.nextElementSibling;while(n&&n.tagName!=='H2'){n.classList.add('wb-sources');n=n.nextElementSibling}}});
   r.querySelectorAll('.wb-flow p').forEach(p=>{if(p.children.length===1&&p.firstElementChild.tagName==='STRONG'&&p.textContent.trim()===p.firstElementChild.textContent.trim())p.classList.add('wb-keyline')});
   paint(r);
-  const fontsReady=document.fonts?.ready||Promise.resolve();
-  layout(false);fontsReady.then(()=>layout(true));
+  const generation=++layoutGeneration;
+  layout(false);
+  // Layout requests this chapter's used faces; read ready only afterwards.
+  // The captured reader/generation cannot move a subsequently opened chapter.
+  (document.fonts?.ready||Promise.resolve()).then(()=>refitAfterFonts(r,generation));
  }
  let resizeTimer=0;
  window.addEventListener('resize',()=>{cancelSelectionDrag();clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>layout(true),120)});
@@ -1046,6 +1145,7 @@ function highlightNodes(flow){
   bindLinks(document);bindSearch();
   document.querySelectorAll('[data-wisdom-discussions]').forEach(b=>b.onclick=()=>WisdomDiscussion.list(b.dataset.wisdomDiscussions||undefined));
   document.querySelector('[data-wisdom-retry]')?.addEventListener('click',()=>load());
+  document.querySelector('[data-wisdom-chapter-retry]')?.addEventListener('click',()=>{editionRecoveries.clear();void load()});
 
   document.querySelectorAll('[data-wisdom-pref]').forEach(e=>e.onclick=()=>{const id=e.dataset.wisdomPref,t=data.thinkers.find(x=>x.id===id);change({kind:'thinker',id,field:'more',value:!t.more},e)});
   document.querySelectorAll('[data-wisdom-entry]').forEach(e=>e.onclick=()=>{const id=e.dataset.wisdomEntry,field=e.dataset.field,item=data.entries.find(x=>x.id===id);change({kind:'entry',id,field,value:field==='done'?true:!item[field]},e)});
@@ -1055,7 +1155,7 @@ function highlightNodes(flow){
   document.querySelectorAll('[data-wisdom-remove-highlight]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const d=await api('wisdom/highlight',{action:'remove',id:+b.dataset.wisdomRemoveHighlight});data.highlights=d.highlights;if(location.hash==='#/highlights')enter();toast('Highlight removed.')}catch{b.disabled=false;toast('Couldn’t remove it. Try again.')}});
   document.querySelectorAll('[data-pct]').forEach(x=>x.style.width=x.dataset.pct+'%');
   document.querySelectorAll('.wb-shelf').forEach(litShelf);litGrid();
-  // Thumbs register on the first touch (James, 20 Oct). The browser drops a touch click once the finger rolls
+  // Thumbs register on the first touch (owner request, 20 Oct). The browser drops a touch click once the finger rolls
   // ~15px, so a touch that starts and ends on the button rates on lift; the click that may follow is ignored.
   document.querySelectorAll('[data-wisdom-rate]').forEach(b=>{
    const fire=()=>{const id=b.dataset.wisdomRate,v=+b.dataset.value,item=data.entries.find(x=>x.id===id);if(item)change({kind:'entry',id,field:'rating',value:item.rating===v?0:v},b)};
@@ -1117,5 +1217,6 @@ function highlightNodes(flow){
  window.addEventListener('wisdom:discussion-open',()=>freezeReader());
  window.addEventListener('wisdom:discussion-close',unfreezeReader);
  window.addEventListener('wisdom:discussions',()=>{const r=reader();const dc=r?.querySelector('[data-wisdom-discuss-chapter]');if(dc)dc.firstChild.textContent=window.WisdomDiscussion?.hasChapter?.(r.dataset.read,r.dataset.bodySha256)?'Continue discussion ':'Discuss with AI ';if(r&&!hlHandle&&!hlPress){paint(r);if(hlAct)showActive();}});
- return {discussionContext,locateDiscussion,render,bind,load,enter,navigate,active,remember,syncHash,refreshDay,canGoBack,back,atRoot,popRoute,restoreRoute};
+ function syncOffline(s){if(!data)return;showLoaded(s);if(reader()&&hlAct&&hlAct.id<0){hlAct=null;hidePop()}}
+ return {syncOffline,discussionContext,locateDiscussion,render,bind,load,enter,navigate,active,remember,syncHash,refreshDay,canGoBack,back,atRoot,popRoute,restoreRoute};
 })();

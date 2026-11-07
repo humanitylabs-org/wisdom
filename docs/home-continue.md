@@ -1,6 +1,6 @@
 # Home: Continue reading
 
-Home answers "where was I?" before anything else (James, 18 Oct 2026).
+Home answers "where was I?" before anything else (owner request, 18 Oct 2026).
 
 1. **Continue reading** (top). The collection opened most recently, at the chapter last open, resuming on the exact page this device last showed. A chapter counts as open from its last page turn or opening (`opened_at`, the `wisdom_positions.updated_at` the server already keeps) or its completion (`read_at`). Finishing a chapter (reaching its end page) moves the card to that collection's next chapter. A chapter marked read earlier but reopened and left mid-way stays the target, so an old "mark read" no longer pushes you past a chapter you are still in.
 2. **Currently reading**: every other started collection, most recently opened first, each linking to its own resume chapter.
@@ -10,7 +10,7 @@ When nothing has been started, the newest fresh collection fills the top slot as
 
 ## Finished on the rating screen (0.4.0-private.14)
 
-Reaching a chapter's end page, the thumbs up/down screen, finishes it (James, 19 Oct 2026). The `done` write also records 100% in `wisdom_positions`, so its reply already shows the chapter complete, and Home treats a chapter as finished when either the synced progress is 100 or this device's saved page is the end page. Before this, the `done` reply could carry a snapshot taken before the final page write landed, and Home offered "Resume · 1 min left" on the chapter just finished. `qa/home_model.cjs` and `qa/test_done_progress.py` cover both halves.
+Reaching a chapter's end page, the thumbs up/down screen, finishes it (owner request, 19 Oct 2026). The `done` write also records 100% in `wisdom_positions`, so its reply already shows the chapter complete, and Home treats a chapter as finished when either the synced progress is 100 or this device's saved page is the end page. Before this, the `done` reply could carry a snapshot taken before the final page write landed, and Home offered "Resume · 1 min left" on the chapter just finished. `qa/home_model.cjs` and `qa/test_done_progress.py` cover both halves.
 
 ## Layout
 

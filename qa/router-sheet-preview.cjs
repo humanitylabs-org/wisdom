@@ -2,7 +2,7 @@
 const {chromium}=require(process.env.PLAYWRIGHT_DIR),fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const BASE=process.env.WISDOM_HOST_URL;assert(BASE,'WISDOM_HOST_URL required');
 const out=process.env.EVIDENCE,assets=process.env.QA_ASSET_DIR;fs.mkdirSync(out,{recursive:true});
-(async()=>{const b=await chromium.launch({headless:true,channel:'chrome'});const ctx=await b.newContext({viewport:{width:1440,height:1000}}),checks=[],blocked=[];let state='needs_owner',librarySnapshot={};
+(async()=>{const b=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'});const ctx=await b.newContext({viewport:{width:1440,height:1000}}),checks=[],blocked=[];let state='needs_owner',librarySnapshot={};
 try{
 for(const ext of ['js','css'])await ctx.route(`**/wisdom/discussions.${ext}*`,r=>r.fulfill({contentType:ext==='js'?'text/javascript':'text/css',body:fs.readFileSync(path.join(assets,`discussions.${ext}`))}));
 const message=()=>state==='needs_owner'?{id:'a1',role:'assistant',state:'failed',content:'',error:'Connect a model to use Ask AI',error_code:'needs_owner',fix_url:'/wizard-os-home/?open=wizard-connection-router'}:{id:'a1',role:'assistant',state:'complete',content:'Words point at reality; they are not reality.',model:state==='match'?'claude-sonnet-5':'approved-replacement',tested_on:'claude-sonnet-5',chosen:state==='match'?'match':'owner-swap'};

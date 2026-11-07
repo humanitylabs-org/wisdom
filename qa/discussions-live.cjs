@@ -1,9 +1,9 @@
-// Thales: real reader + app API + configured first-party model, disposable data only.
+// Build worker: real reader + app API + configured first-party model, disposable data only.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const fs=require('fs'),path=require('path'),assert=require('assert'),os=require('os');
 (async()=>{
  const out=process.env.WISDOM_QA_EVIDENCE,url=process.env.WISDOM_QA_URL;assert(out&&url);fs.mkdirSync(out,{recursive:true});
- const browser=await chromium.launch({headless:true,channel:'chrome'}),checks=[];
+ const browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'}),checks=[];
  let lastPage;
  try{
   for(const width of [360,412,1280]){

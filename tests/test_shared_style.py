@@ -32,7 +32,11 @@ class SharedStyle(unittest.TestCase):
     def test_hosted_panel_defaults_use_opaque_skin_roles(self):
         css = (WEB / 'wizard-appearance.css').read_text()
         for selector in ('html[data-wz-hosted] .sheet', 'html[data-wz-hosted] .wb-sheet-card', 'html[data-wz-hosted] :is(.wb-hlpop,.wb-glosspop)'):
-            self.assertIn(selector + '{background:var(--wz-panel)', css)
+            # Text-bearing overlays stay opaque: the skin's overlay tint is composited over the opaque panel/base role
+            # (tests/opaque_overlays_browser.cjs proves it in a browser), never left translucent.
+            rule = css.split(selector + '{', 1)[1].split('}', 1)[0]
+            self.assertIn('linear-gradient(var(--wz-overlay', rule, selector)
+            self.assertRegex(rule, r'var\(--wz-(panel|base)\b', selector)
 
     def test_entrypoint_loads_the_shared_component_classes(self):
         entry = (WEB / 'index.html').read_text()

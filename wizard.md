@@ -5,7 +5,12 @@ name: Wisdom
 type: service
 category: app
 voice_names: ["reader", "wisdom reader", "wizard reader", "collections", "jobs", "steve jobs"]
-version: 0.4.0-private.25
+# Home-screen pins (wizard-os spec/WIZARD_MD.md "Home-screen pins"): the shell holds no Wisdom-specific code; Wisdom asks for these.
+home_screen:
+  offline: true                        # a pinned Wisdom opens offline; route and reading place live in the wisdom- WizOffline replica
+  position_keys: ["wisdom:*:pos:*"]    # per-chapter reading place (wisdom.js posKey), kept per pin
+  route_state: wisdom                  # history.state.wisdom: Wisdom restores its own route at boot
+version: 0.4.0-private.36
 summary: Deep reader for imported collections, with highlights, glosses, documented API and MCP.
 license: MIT
 source: .
@@ -61,7 +66,7 @@ health: /healthz
 
 # Wisdom
 
-A private testing reader, populated on first install with four owner-selected collections: Steve Jobs, Tao Te Ching, Black Mirror, and Around Every Circle. Datura and Nāgārjuna are excluded, including the embedded circle-nagarjuna chapter. No reading history, highlights or requests are copied.
+A reader for collections of wisdom texts. Public builds start with an empty library; no reading history, highlights or requests are copied.
 Your library lives in Files under `media/Wisdom`; reading progress, highlights and ratings live in
 the app's own data folder and survive updates and reinstalls.
 

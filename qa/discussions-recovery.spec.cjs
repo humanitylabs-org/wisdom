@@ -1,5 +1,5 @@
 /* Synthetic API contract regression, not real-model or installed-shell proof.
- * Uses the real reader, shared app-client/services and appearance-host. Run on forum only.
+ * Uses the real reader, shared app-client/services and appearance-host. Run on the build worker only.
  * QA_BASELINE_ASSETS points to exact live static/ for the negative control.
  */
 'use strict';

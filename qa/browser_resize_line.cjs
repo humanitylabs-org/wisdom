@@ -1,7 +1,7 @@
-// Thales: entering/leaving Wizard full screen (a taller viewport), rotation and A+/A− re-paginate the chapter
+// Build worker: entering/leaving Wizard full screen (a taller viewport), rotation and A+/A− re-paginate the chapter
 // without losing the reader's place. For every text page: the first word in view stays in view after the
 // relayout, and undoing it returns to the same page. Real HTTP fixture + shared WizardApp core, disposable data.
-// James, 19 Oct 2026.
+// owner request, 19 Oct 2026.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn}=require('child_process'),{createInterface}=require('readline');
 const fs=require('fs'),path=require('path'),assert=require('assert');
@@ -11,7 +11,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
  let browser;
  try{
   const info=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('fixture timeout')),15000);fixture.once('exit',c=>reject(Error('fixture exit '+c)));createInterface({input:fixture.stdout}).once('line',l=>{clearTimeout(t);resolve(JSON.parse(l))})});
-  browser=await chromium.launch({headless:true,channel:'chrome'});
+  browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'});
   const checks=[],errors=[],failures=[];
   for(const [width,height,tall] of [[390,760,860],[360,700,800]]){
    const ctx=await browser.newContext({viewport:{width,height},isMobile:true,hasTouch:true});

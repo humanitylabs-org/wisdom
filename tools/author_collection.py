@@ -209,6 +209,9 @@ def export_collection(source, collection, *, license, attribution, rights='priva
                 raise ValueError('Missing chapter')
             add_file(name, chapter)
             files[name].decode('utf-8')
+        import authoring_contract
+        for entry in entries:
+            authoring_contract.validate_deck(entry.get('deck', ''), files['content/' + entry['id'] + '.md'].decode('utf-8'))
         body = '\n'.join(files['content/' + key + '.md'].decode('utf-8') for key in ids)
         gloss_raw = src.read('content/glosses.json', optional=True)
         if gloss_raw is not None:

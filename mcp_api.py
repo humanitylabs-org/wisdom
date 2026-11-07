@@ -18,6 +18,8 @@ TOOLS = [
     {'name': 'wisdom_export_preview', 'description': 'Preview exactly one enabled collection download: chapters, files, digests and rights. No personal state; never publishes.', 'inputSchema': schema({'id': S}, ['id'])},
     {'name': 'wisdom_export', 'description': 'Download the previewed collection as ZIP base64 only after explicit user confirmation. Requires preview sha256 and confirm:true. Never publishes or changes library scope.', 'inputSchema': schema({'id': S, 'sha256': S, 'confirm': {'type': 'boolean', 'const': True}}, ['id', 'sha256', 'confirm'])},
     {'name': 'wisdom_library', 'description': 'List imported bundles and the explicitly configured collection source.', 'inputSchema': schema({})},
+    {'name': 'wisdom_recent_reading', 'description': 'What the owner read lately, newest first (opened or finished), each with the full chapter text and their highlights. Use for "the passage I read this morning". limit 1-20 (default 3); since = ISO time.', 'inputSchema': schema({'limit': {'type': 'integer'}, 'since': S})},
+    {'name': 'wisdom_chapter', 'description': 'One chapter by id, or by a words-in-the-title match, with its full text and the owner\'s highlights.', 'inputSchema': schema({'id': S, 'title': S})},
     {'name': 'wisdom_state', 'description': 'Read enabled collections, chapters, progress and highlights.', 'inputSchema': schema({})},
     {'name': 'wisdom_import', 'description': 'Preview/stage a version-1 ZIP document bundle. It stays disabled until explicitly enabled.', 'inputSchema': schema({'zip_base64': S}, ['zip_base64'])},
     {'name': 'wisdom_source_import', 'description': 'Stage one id from the configured manifest source only.', 'inputSchema': schema({'id': S}, ['id'])},
@@ -37,7 +39,7 @@ def dispatch(d):
         return 202, {}
     out = {'jsonrpc': '2.0', 'id': key}
     if method == 'initialize':
-        out['result'] = {'protocolVersion': '2025-03-26', 'capabilities': {'tools': {}}, 'serverInfo': {'name': 'wisdom', 'version': '0.4.0-private.25'}}
+        out['result'] = {'protocolVersion': '2025-03-26', 'capabilities': {'tools': {}}, 'serverInfo': {'name': 'wisdom', 'version': '0.4.0-private.30'}}
     elif method == 'ping':
         out['result'] = {}
     elif method == 'tools/list':
@@ -77,6 +79,10 @@ def dispatch(d):
                         details, raw = collection_export.download(c, a)
                         result = {'id': details['id'], 'sha256': details['sha256'],
                                   'zip_base64': base64.b64encode(raw).decode('ascii')}
+                elif name == 'wisdom_recent_reading':
+                    result = wisdom.recent(c, a)
+                elif name == 'wisdom_chapter':
+                    result = wisdom.entry(c, a)
                 elif name == 'wisdom_state':
                     result = wisdom.state(c)
                 elif name == 'wisdom_import':
