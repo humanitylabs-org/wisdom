@@ -1,4 +1,4 @@
-// Thales: actual app HTTP fixture + actual shared WizardApp, disposable storage.
+// Build worker: actual app HTTP fixture + actual shared WizardApp, disposable storage.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn}=require('child_process'),{createInterface}=require('readline');
 const fs=require('fs'),path=require('path'),assert=require('assert');
@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
  let browser;
  try{
   const info=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('fixture timeout')),15000);fixture.once('exit',c=>reject(Error('fixture exit '+c)));createInterface({input:fixture.stdout}).once('line',l=>{clearTimeout(t);resolve(JSON.parse(l))})});
-  browser=await chromium.launch({headless:true,channel:'chrome'});
+  browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'});
   const checks=[];
   for(const viewport of [{width:412,height:915},{width:1280,height:900}]){
    const ctx=await browser.newContext({viewport,isMobile:viewport.width<500,hasTouch:true});

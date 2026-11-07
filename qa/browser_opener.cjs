@@ -1,4 +1,4 @@
-// Cover title and summary are selectable like the body (James, 18 Oct). Disposable fixture, real touch.
+// Cover title and summary are selectable like the body (owner request, 18 Oct). Disposable fixture, real touch.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn,execFileSync}=require('child_process'),{createInterface}=require('readline');
 const fs=require('fs'),path=require('path'),assert=require('assert'),crypto=require('crypto');

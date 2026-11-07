@@ -162,6 +162,7 @@ def apply(c, data):
     identity(data); digest(data['token'])
     with library.LOCK:
         c.execute('BEGIN IMMEDIATE')
+        navigation_token = None
         try:
             row = c.execute('SELECT * FROM wisdom_revision_previews WHERE token=?', (data['token'],)).fetchone()
             if not row:
@@ -205,8 +206,12 @@ def apply(c, data):
                 (collection_id,bundle_id,sha256,scope,provenance) VALUES (?,?,?,'private','owner-revision')''',
                 (data['collection_id'], b['id'], data['new_sha256']))
             c.execute('UPDATE wisdom_revision_previews SET applied=1 WHERE token=?', (data['token'],))
+            navigation_token = library.remember_navigation({'id': b['id'], 'sha256': data['new_sha256']}, m, d, files, pending=True)
             c.commit()
+            library.finish_navigation(navigation_token, committed=True)
             return dict(json.loads(row['preview']), applied=True, replay=False)
         except BaseException:
             c.rollback()
+            if navigation_token is not None:
+                library.finish_navigation(navigation_token, committed=False)
             raise

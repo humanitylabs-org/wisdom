@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Wisdom",
-    "version": "0.4.0-private.25"
+    "version": "0.4.0-private.30"
   },
   "paths": {
     "/healthz": {
@@ -759,6 +759,39 @@
           },
           "403": {
             "description": "Untrusted host/origin"
+          }
+        }
+      }
+    },
+    "/api/discussions/{id}/thread": {
+      "post": {
+        "summary": "Open this discussion as the owner's Wizard Chats thread (find or create once); returns session_id and the first-message passage item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{session_id,agent,title,started,reply}"
+          },
+          "503": {
+            "description": "Wizard Chats not connected"
           }
         }
       }

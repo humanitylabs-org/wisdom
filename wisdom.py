@@ -25,12 +25,12 @@ def init(c):
   # Thumbs on an episode's end page: 1 up, -1 down, 0 unrated. Trains thinker ranking.
   c.execute('ALTER TABLE wisdom_reactions ADD COLUMN rating INTEGER NOT NULL DEFAULT 0')
  if 'note' not in {r[1] for r in c.execute('PRAGMA table_info(wisdom_highlights)')}:
-  # A typed or dictated comment on a saved passage (James, 18 Oct). Empty means no note.
+  # A typed or dictated comment on a saved passage (owner request, 18 Oct). Empty means no note.
   c.execute("ALTER TABLE wisdom_highlights ADD COLUMN note TEXT NOT NULL DEFAULT ''")
  if 'read_at' not in {r[1] for r in c.execute('PRAGMA table_info(wisdom_reactions)')}:
   # When a chapter was marked read: orders Currently reading by most recent activity. Null for older reads.
   c.execute('ALTER TABLE wisdom_reactions ADD COLUMN read_at TEXT')
- # Collection requests from the home screen (James, 12 Oct). Stored first, then handed to Archimedes;
+ # Collection requests from the home screen (owner request, 12 Oct). Stored first, then handed to the Wizard agent;
  # session_id/run_id record the admitted build, error the honest reason it wasn't sent.
  c.execute('''CREATE TABLE IF NOT EXISTS wisdom_requests(seq INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'requested', requested_at TEXT NOT NULL, session_id TEXT, run_id TEXT, sent_at TEXT, error TEXT)''')
  c.execute('''CREATE TABLE IF NOT EXISTS wisdom_request_routes(seq INTEGER PRIMARY KEY, session_id TEXT NOT NULL, payload TEXT NOT NULL, response TEXT)''')
@@ -60,8 +60,8 @@ def catalog():
   if isinstance(col,dict) and isinstance(col.get('entries'),list):col['entries']=[i for i in col['entries'] if i in ids]
  return d
 
-def state(c,day=None):
- d=catalog(); day=day or dt.datetime.now(ZoneInfo(os.environ.get('WISDOM_TIMEZONE','UTC'))).date().isoformat()
+def state(c,day=None,*,metadata=False):
+ d=library.catalog(c,metadata=True) if metadata else catalog(); day=day or dt.datetime.now(ZoneInfo(os.environ.get('WISDOM_TIMEZONE','UTC'))).date().isoformat()
  reactions={r['id']:dict(r) for r in c.execute('SELECT * FROM wisdom_reactions')}
  preferences={r['id']:bool(r['more']) for r in c.execute('SELECT * FROM wisdom_thinkers')}
  dives={}
@@ -126,23 +126,39 @@ def state(c,day=None):
   if e.get('dive_of') and not e['art'] and e['dive_of'] in byid:e['art']=byid[e['dive_of']]['art']
  collect(d,byid)
  fresh_marks(d)
- return dict(d,request_enabled=os.environ.get('WISDOM_ADMIT')=='live' and bool(os.environ.get('WISDOM_WIZARD_ORIGIN')),picks=orders['to-read'][:3],orders=orders,preferences=preferences,day=day,timezone=os.environ.get('WISDOM_TIMEZONE','UTC'),notices=d.get('_notices',[]),highlights=highlights(c),glosses=glosses(d['entries']),requests=requests(c))
+ return dict(d,request_enabled=os.environ.get('WISDOM_ADMIT')=='live' and bool(os.environ.get('WISDOM_WIZARD_ORIGIN')),picks=orders['to-read'][:3],orders=orders,preferences=preferences,day=day,timezone=os.environ.get('WISDOM_TIMEZONE','UTC'),notices=d.get('_notices',[]),highlights=highlights(c),glosses={} if metadata else glosses(d['entries'],d.get('_glosses',{})),requests=[] if metadata else requests(c),metadata_only=metadata)
 
-def glosses(entries):
+def chapter(c,key):
+ # Navigation selects the owning verified edition, not every unrelated bundle.
+ ident = library.ident(key)
+ for b in library.list_bundles(c):
+  if b['status'] != 'enabled':continue
+  try:_, nav, _ = library.package_navigation(b)
+  except (ValueError,OSError):continue
+  if not any(e['id']==ident for e in nav['entries']):continue
+  _, d, files = library.package_files(b,navigation=False)
+  e = next(e for e in d['entries'] if e['id']==ident)
+  body = files['content/'+ident+'.md'].decode('utf-8')
+  return {'id':ident,'body':body,'body_sha256':hashlib.sha256(body.encode()).hexdigest(),
+          'glosses':glosses([{'body':body}],library.bounded_json(files.get('content/glosses.json',b'{}')))}
+ raise ValueError('Chapter unavailable; reopen your library')
+
+
+def glosses(entries,known=None):
  # Foreign phrases the reader underlines; tap one for romanisation, a sound-alike and the meaning
- # (James, 12 Oct). Only phrases that appear in a live chapter are sent.
+ # (owner request, 12 Oct). Only phrases that appear in a live chapter are sent.
  text='\n'.join(e['body'] for e in entries)
  if os.environ.get('WISDOM_LEGACY_QA')=='1':
   p=ROOT/'content/glosses.json'
   try:g=json.loads(p.read_text())
   except (OSError,ValueError):return {}
- else:g=catalog().get('_glosses',{})
+ else:g=known if known is not None else catalog().get('_glosses',{})
  return {k:v for k,v in g.items() if isinstance(v,dict) and v.get('en') and k in text}
 
 FRESH_DAYS=7
 
 def fresh_marks(d,now=None):
- """Something James just asked for goes to the front: collections and thinkers carry the time their newest
+ """Something the owner just asked for goes to the front: collections and thinkers carry the time their newest
  chapter was added, and stay 'fresh' for a week until he has read through them."""
  now=now or dt.datetime.now(dt.timezone.utc)
  when=lambda e:dt.datetime.fromisoformat(e.get('published_at','1970-01-01T00:00:00Z').replace('Z','+00:00'))
@@ -214,7 +230,7 @@ def quote_in_body(text,body):
  return compact(text) in compact(rendered)
 
 def quote_in_entry(text,entry):
- """Body prose, or the cover title and summary the reader also lets James select."""
+ """Body prose, or the cover title and summary the reader also lets the reader select."""
  if quote_in_body(text,entry['body']):return True
  cover=''.join(str(entry.get(k) or '') for k in ('title','deck'))
  return re.sub(r'\s+','',text) in re.sub(r'\s+','',cover)
@@ -287,7 +303,7 @@ def react(c,d):
   now=dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds')
   if field=='done':
    c.execute('UPDATE wisdom_reactions SET read=1,archived=1,read_at=? WHERE id=?',(now,key))
-   # Done means the end page was reached: the reply's snapshot must already show 100% (James, 19 Oct).
+   # Done means the end page was reached: the reply's snapshot must already show 100% (owner request, 19 Oct).
    c.execute('INSERT INTO wisdom_positions(id,progress,updated_at) VALUES (?,100,?) ON CONFLICT(id) DO UPDATE SET progress=100,updated_at=excluded.updated_at',(key,now))
   else:c.execute(f'UPDATE wisdom_reactions SET {field}=? WHERE id=?',(value,key))
   if field=='read':c.execute('UPDATE wisdom_reactions SET read_at=? WHERE id=?',(now if value else None,key))
@@ -299,7 +315,7 @@ def react(c,d):
 REQUEST_MAX=2000
 
 def requests(c,limit=8):
- """James's recent collection requests, newest first. QA rows (status 'qa') never show."""
+ """The owner's recent collection requests, newest first. QA rows (status 'qa') never show."""
  return [dict(seq=r[0],text=r[1],status=r[2],requested_at=r[3],session_id=r[4],run_id=r[5],sent_at=r[6],error=r[7]) for r in c.execute("SELECT seq,text,status,requested_at,session_id,run_id,sent_at,error FROM wisdom_requests WHERE status!='qa' ORDER BY seq DESC LIMIT ?",(limit,))]
 
 def request_text(d):
@@ -319,7 +335,7 @@ def get_request(c,seq):
  return dict(seq=r[0],text=r[1],status=r[2],requested_at=r[3],session_id=r[4],run_id=r[5],sent_at=r[6],error=r[7])
 
 def mark_request(c,seq,session_id=None,run_id=None,error=None):
- """Record the admission outcome: 'building' once Archimedes has the run, 'unsent' when the hand-off failed."""
+ """Record the admission outcome: 'building' once the Wizard agent has the run, 'unsent' when the hand-off failed."""
  cur=get_request(c,seq);now=dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds')
  status=cur['status'] if cur['status']=='qa' else ('building' if session_id and not error else 'unsent')
  c.execute('UPDATE wisdom_requests SET status=?,session_id=COALESCE(?,session_id),run_id=COALESCE(?,run_id),sent_at=?,error=? WHERE seq=?',(status,session_id,run_id,now if session_id and not error else cur['sent_at'],error,seq))
@@ -332,3 +348,30 @@ def mark_dive(c,seq,status):
  """Editorial fulfilment: mark one request done (deep dive published) or declined."""
  if status not in ('done','declined','requested'):raise ValueError('Unknown status')
  if not c.execute('UPDATE wisdom_dives SET status=? WHERE seq=?',(status,seq)).rowcount:raise ValueError('Unknown request')
+
+
+def recent(c,a):
+ """What the owner read lately, newest first: chapters opened or marked read, each with its full text and the
+ owner's highlights on it. Small enough for an agent to answer "the passage I read this morning" in one call."""
+ limit=a.get('limit',3)
+ if not isinstance(limit,int) or isinstance(limit,bool) or not 1<=limit<=20:raise ValueError('limit must be 1-20')
+ since=a.get('since')
+ if since is not None and not isinstance(since,str):raise ValueError('since must be an ISO time')
+ st=state(c);cols={x['id']:x.get('title') for x in st.get('collections',[])};hl={}
+ for h in st.get('highlights',[]):hl.setdefault(h['entry_id'],[]).append({k:h[k] for k in('text','note','created_at')})
+ rows=[]
+ for e in st['entries']:
+  at=max([t for t in (e.get('read_at'),e.get('opened_at')) if t] or [''])
+  if at and (since is None or at>=since):rows.append((at,e))
+ rows.sort(key=lambda r:r[0],reverse=True)
+ return {'timezone':st.get('timezone'),'entries':[{'id':e['id'],'title':e.get('title'),'collections':[cols.get(i,i) for i in e.get('collections',[])],'thinker':e.get('thinker'),'last_activity_at':at,'opened_at':e.get('opened_at'),'read_at':e.get('read_at'),'progress':e.get('progress'),'body':e.get('body'),'highlights':hl.get(e['id'],[])} for at,e in rows[:limit]]}
+
+
+def entry(c,a):
+ """One chapter by id, or the best title match for a query, with its full text and the owner's highlights."""
+ st=state(c);q=a.get('id') or a.get('title')
+ if not isinstance(q,str) or not q.strip():raise ValueError('id or title required')
+ e=next((x for x in st['entries'] if x['id']==q),None) or next((x for x in st['entries'] if q.strip().lower() in str(x.get('title','')).lower()),None)
+ if not e:raise ValueError('No chapter matches')
+ cols={x['id']:x.get('title') for x in st.get('collections',[])}
+ return {'id':e['id'],'title':e.get('title'),'collections':[cols.get(i,i) for i in e.get('collections',[])],'thinker':e.get('thinker'),'opened_at':e.get('opened_at'),'read_at':e.get('read_at'),'progress':e.get('progress'),'body':e.get('body'),'highlights':[{k:h[k] for k in('text','note','created_at')} for h in st.get('highlights',[]) if h['entry_id']==e['id']]}

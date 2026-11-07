@@ -1,5 +1,32 @@
 # Passage discussions
 
+## In Wizard: the Philosopher Chats thread (0.4.0-private.28)
+
+owner request, 22 Oct 2026: "why … are you implementing some bootstrap thing from scratch when we
+already have a fully functional chat interface?" Hosted in Wizard, Ask AI and Discuss with
+AI open the owner's own Chats thread laid over the Wisdom window, so voice into the composer,
+the orb, attachments, the model picker, Stop, queued replies and history are exactly Chats.
+
+- `POST /api/discussions/<id>/thread` `{}` finds or creates (once, same id on retry) the
+  Philosopher session for that discussion: title `Wisdom · <chapter>`, agent `philosopher`,
+  model `claude-fable-5-1` on `anthropic`. It returns
+  `{session_id, agent, title, started, reply}`. An empty legacy main-agent session is rebound
+  once and archived, never deleted; nonempty legacy threads are preserved and require reconciliation.
+- `reply` (`key: wisdom:<discussion id>`) is the passage, the full chapter text (clipped
+  to the shell's 32 000-character item limit), the reading guidance and one-word commands,
+  without repeating carried-over history. Earlier Wisdom-only turns appear visibly in Chats
+  through one idempotent history run, which asks only for “Carried over — ask away.” The
+  unabridged passage and Q/A are its visible user message. Admission bookkeeping is persisted
+  in `wisdom_discussion_chats`; retrying a lost response uses the same payload and idempotency
+  key. The reply item remains for the first real follow-up, then becomes `null`.
+- The reader calls `WizardApp.nav.openThread(session_id, {reply, agent})`. The shell admits this
+  for Manager and Wisdom only, pins the item beside that thread's draft (the standard reply
+  bubble) and frames it as quoted data in the first message. Back returns to the reader.
+- Standalone, without `WISDOM_ADMIT=live`, or on a shell without agent-aware thread navigation, the in-app
+  sheet described below is used unchanged.
+
+## The in-app sheet (standalone fallback)
+
 Ask AI is a Wisdom-owned conversation attached to an exact passage and chapter
 edition. It does not create a Wizard chat or invoke the owner's assistant.
 
@@ -68,14 +95,14 @@ There is no endpoint for overriding the model, prompt, executable or provider.
 
 ## Deferred direction
 
-James noted that this could later become, or feed into, a scholar/tutor agent.
-That is deliberately outside this release. Resurface the option after he has used
+The owner noted that this could later become, or feed into, a scholar/tutor agent.
+That is deliberately outside this release. Resurface the option after they have used
 the reading companion; keep personal tutoring instructions and cross-discussion
 memory out of this initial discussion policy.
 
 ## Whole-chapter discussions (0.4.0-private.10)
 
-Every chapter's end page has **Discuss with AI** (James, 18 Oct 2026). It opens the same
+Every chapter's end page has **Discuss with AI** (owner request, 18 Oct 2026). It opens the same
 discussion sheet with no passage selected: `POST /api/discussions` with exactly
 `{entry_id, body_sha256, scope: "chapter"}`. The thread is stored with `start = end = 0` and an
 empty quote, one per chapter edition (repeat opens return it), and is served with
@@ -91,7 +118,7 @@ stays put. Guarded by `qa/browser_chapter_end.cjs`.
 
 ## Chat layout (0.4.0-private.11)
 
-James, 19 Oct 2026: the sheet should feel like chatting with an AI, never a contact form.
+owner request, 19 Oct 2026: the sheet should feel like chatting with an AI, never a contact form.
 The sheet sizes to its content until a conversation needs the room. The composer is one
 pill: a globe toggle for web search (same `web_enabled` flag), an auto-growing one-line field
 and a round send/stop button whose accessible name stays `Send`/`Stop`. Starter chips sit just

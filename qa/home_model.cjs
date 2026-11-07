@@ -40,7 +40,7 @@ const order=[...new Set([...ui.reading().matchAll(/\/read\/(\w+)\/(reading-\d)/g
 assert.deepEqual(order,['reading-0','reading-1','reading-3','reading-4']);
 assert(ui.reading().includes('/read/s0/reading-0'));
 data.entries.find(e=>e.id==='r2').progress=100;assert(ui.continueCard().includes('/read/s2/reading-2')); // finished: next chapter
-// The done reply's snapshot can predate the final progress write (James, 19 Oct): this device's saved page
+// The done reply's snapshot can predate the final progress write (owner request, 19 Oct): this device's saved page
 // at the end page (rating screen) still counts as finished, so Home moves on instead of "Resume · 1 min left".
 data.entries.find(e=>e.id==='r2').progress=92;context.localStorage.getItem=k=>k.endsWith(':pos:r2')?'1':null;
 assert(ui.continueCard().includes('/read/s2/reading-2'),ui.continueCard());assert(!ui.continueCard().includes('1 min left'));

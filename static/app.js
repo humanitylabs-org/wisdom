@@ -7,13 +7,15 @@ const icon=n=>`<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="current
 function safe(raw){if(typeof raw!=='string'||!raw.trim())return '';try{let u=new URL(raw,base);return ['https:','http:'].includes(u.protocol)?u.href:''}catch{return ''}}
 function avatar(s){let name=String(s.name||s.source_name||s.author||'?').trim(),initials=name.replace(/^@/,'').split(/\s+/).map(x=>x[0]).slice(0,2).join('')||'?';return `<span class="avatar" data-tone="${name.length%5}" data-initials="${esc(initials)}">${s.avatar?`<img src="${esc(safe(s.avatar))}" alt="" loading="lazy" referrerpolicy="no-referrer">`:esc(initials)}</span>`}
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').classList.remove('show'),4000)}
-async function api(path,body,timeout=20000){let r=await fetch(new URL('api/'+path,base),{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(timeout)});let d=await r.json();if(!r.ok)throw Object.assign(Error(d.error||'Unable to connect'),{status:r.status});return d}
+async function api(path,body,timeout=20000){if(window.WisdomOffline)return WisdomOffline.request('api/'+path,body,timeout);let r=await fetch(new URL('api/'+path,base),{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(timeout)});let d=await r.json();if(!r.ok)throw Object.assign(Error(d.error||'Unable to connect'),{status:r.status});return d}
 // wisdom.js reads these names; in this app the route is always Wisdom.
 let route='wisdom',epoch=0;
 function render(){
  $('#app').innerHTML=`<div class="w-layout"><main class="w-main" id="content">${Wisdom.render()}${!location.hash||location.hash==='#'?'<footer class="wm-library-entry"><button class="wisdom-action wz-button secondary" data-wisdom-discussions="">Discussions</button><a href="#/manage" data-wisdom-route="/manage">Manage collections</a></footer>':''}</main></div>`;
  document.querySelectorAll('img').forEach(i=>i.onerror=()=>{i.style.display='none';const p=i.parentElement;if(p?.classList.contains('avatar'))p.textContent=p.dataset.initials||'?'});
  Wisdom.bind();CollectionManager.bind();
+ // Routes replace the library summary; paint retained failures on the new DOM.
+ window.WisdomOffline?.renderFailures();
 }
 window.renderWisdom=render;
 // App routes are domain state; the shared client owns standalone/platform Back.
@@ -35,3 +37,21 @@ window.addEventListener('popstate',e=>{
 window.addEventListener('hashchange',()=>Wisdom.syncHash());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)Wisdom.refreshDay()});
 Wisdom.enter();
+/* Daily badge (request, 22 Oct): one bubble on Wisdom's mark each morning as a nudge to read one piece of
+ * wisdom. It clears as soon as Wisdom is actually on screen and stays clear until the next morning.
+ * The day turns at 05:00 local time; "seen" is kept per device, like Morning Report's unread badge. */
+const DAILY_SEEN='wisdom.daily-seen',MORNING_HOUR=5;
+const wisdomDay=()=>{const d=new Date(Date.now()-MORNING_HOUR*3600e3);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const dailySeen=()=>{try{return localStorage.getItem(DAILY_SEEN)||''}catch{return ''}};
+const lookingAtWisdom=()=>!document.hidden&&(WizardApp.view?.isVisible?.()??true);
+let dailyShown=-1;
+function dailyBadge(){
+ const today=wisdomDay();
+ if(lookingAtWisdom()&&dailySeen()!==today){try{localStorage.setItem(DAILY_SEEN,today)}catch{}}
+ const n=dailySeen()===today?0:1;
+ if(n!==dailyShown){dailyShown=n;try{WizardApp.badge?.set(n)}catch{}}
+}
+addEventListener('storage',e=>{if(e.key===DAILY_SEEN){dailyShown=-1;dailyBadge()}});
+document.addEventListener('visibilitychange',dailyBadge);
+setInterval(dailyBadge,2000);
+dailyBadge();

@@ -298,7 +298,7 @@ class AuthorContract(unittest.TestCase):
         self.assertEqual(c['provider'], 'anthropic')
         self.assertEqual(len(c['workflow_sha256']), 64)
         for text in (c['prompt_text'], policy.request_input('use a different model')):
-            self.assertNotIn('/home/', text); self.assertNotIn('tailc0f369', text)
+            self.assertNotIn('/home/', text); self.assertNotIn('.ts.net', text)
             self.assertIn('claude-opus-5-5', text)
         docker = Path('Dockerfile').read_text()
         for source in ('authoring_contract.py', 'collection_revision.py', 'COPY authoring', 'COPY skill'):

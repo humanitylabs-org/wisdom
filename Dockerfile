@@ -13,6 +13,8 @@ COPY static/discussions.js static/discussions.css ./static/
 COPY docs/discussions.md ./docs/discussions.md
 COPY static/index.html static/app.js static/wisdom.js static/base.css static/wisdom.css static/collections.css static/app.css static/manage.js static/manage.css static/wizard-appearance.js static/wizard-appearance.css static/icon.svg static/icon-192.png static/icon-512.png static/manifest.webmanifest ./static/
 COPY static/wisdom-art/f/newsreader.woff2 static/wisdom-art/f/newsreader-italic.woff2 static/wisdom-art/f/fraunces.woff2 static/wisdom-art/f/fraunces-italic.woff2 static/wisdom-art/f/OFL-newsreader.txt static/wisdom-art/f/OFL-fraunces.txt ./static/wisdom-art/f/
+COPY static/offline-kit.js static/offline-sw.js static/offline.js static/sw.js ./static/
+COPY static/wizard-tokens.css static/wizard-ui.css static/wizard-sheet.js ./static/
 COPY LICENSE ./
 # Normalize source permissions: operator checkouts may use a private umask.
 RUN chmod -R a+rX /app

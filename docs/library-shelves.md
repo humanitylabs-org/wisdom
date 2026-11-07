@@ -56,7 +56,7 @@ collection_id)` and the state API after restart.
 
 For an extended private edition, explicitly use `scope='private'` and a suitable
 provenance, e.g. `operator-private-extended-edition`. In the approved owner merge,
-Around Every Circle's extended original (including `circle-nagarjuna`) stays
+an extended original collection stays
 wholly in **My library**, retaining original IDs and reading references. The
 nine-chapter approved starter does not authorize its additional chapter. An
 operator may separately approve the three exact approved matching collections.

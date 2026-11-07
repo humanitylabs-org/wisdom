@@ -1,4 +1,4 @@
-// Thales-only browser regression for passage Notes: real Wisdom HTTP API, unmodified WizardApp,
+// Build-worker-only browser regression for passage Notes: real Wisdom HTTP API, unmodified WizardApp,
 // and the shell's real focused-field dictation module (the code path the orb uses to type into a field).
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn}=require('child_process'),{createInterface}=require('readline');
@@ -9,7 +9,7 @@ async function run(width,browser,info,evidence){
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  const state=()=>page.evaluate(async()=>(await (await fetch('api/wisdom')).json()).highlights);
  const shot=n=>page.screenshot({path:path.join(evidence,`${width}-${n}.png`)});
- await page.goto(info.url+'#/read/jobs-focus');await page.waitForSelector('.wb-reader .wb-flow');await page.waitForTimeout(600);
+ await page.goto(info.url+'#/read/example-chapter');await page.waitForSelector('.wb-reader .wb-flow');await page.waitForTimeout(600);
  const before=(await state()).length;
  // A visible word of at least six letters on the current page.
  const findWord=()=>page.evaluate(()=>{const flow=document.querySelector('.wb-flow'),w=innerWidth,walker=document.createTreeWalker(flow,NodeFilter.SHOW_TEXT);let n;

@@ -123,6 +123,21 @@ class Portable(unittest.TestCase):
   rpc('wisdom_reaction',{'kind':'entry','id':'example-chapter','field':'saved','value':True})
   self.assertEqual(rpc('wisdom_state'),self.call('/api/wisdom')[1]);self.assertEqual(rpc('wisdom_library'),self.call('/api/library')[1])
 
+ def test_recent_reading_returns_last_read_chapter_with_text_and_highlights(self):
+  # owner request, 23 Oct 2026: Philosopher should answer "the passage I read this morning" from the real text.
+  def rpc(name,args={}):
+   out=self.call('/mcp',{'jsonrpc':'2.0','id':1,'method':'tools/call','params':{'name':name,'arguments':args}})[1]['result'];return out['isError'],json.loads(out['content'][0]['text']) if not out['isError'] else out
+  self.assertEqual(rpc('wisdom_recent_reading')[1]['entries'],[])
+  self.install()
+  self.assertEqual(rpc('wisdom_recent_reading')[1]['entries'],[])
+  rpc('wisdom_reaction',{'kind':'entry','id':'example-chapter','field':'read','value':True})
+  err,r=rpc('wisdom_recent_reading');self.assertFalse(err)
+  e=r['entries'][0];self.assertEqual(e['id'],'example-chapter');self.assertIn('Quiet attention begins',e['body']);self.assertTrue(e['last_activity_at'])
+  self.assertEqual(e['collections'],['Example collection'])
+  self.assertEqual(rpc('wisdom_recent_reading',{'since':'2999-01-01'})[1]['entries'],[])
+  self.assertTrue(rpc('wisdom_recent_reading',{'limit':0})[0])
+  self.assertEqual(rpc('wisdom_chapter',{'title':'quiet beg'})[1]['id'],'example-chapter')
+
  def test_box_local_agent_on_any_loopback_port_and_foreign_hosts_rejected(self):
   # The App Manager records the host-published loopback port, not the container port; the agent calls that.
   body=json.dumps({'jsonrpc':'2.0','id':1,'method':'tools/list'}).encode()

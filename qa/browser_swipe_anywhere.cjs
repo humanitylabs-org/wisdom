@@ -1,7 +1,7 @@
-// Thales: a page swipe registers anywhere on the reader, including when the finger starts on a control
+// Build worker: a page swipe registers anywhere on the reader, including when the finger starts on a control
 // (Discuss with AI, the Next chapter card, Keep reading, a rating button). The swipe turns the page and the
 // control does not fire; a plain tap (with small finger jitter) still fires the control.
-// Real HTTP fixture + shared WizardApp core, disposable data, real touch input via CDP. James, 19 Oct 2026.
+// Real HTTP fixture + shared WizardApp core, disposable data, real touch input via CDP. owner request, 19 Oct 2026.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn}=require('child_process'),{createInterface}=require('readline');
 const fs=require('fs'),path=require('path'),assert=require('assert');
@@ -11,7 +11,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
  let browser;
  try{
   const info=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('fixture timeout')),15000);fixture.once('exit',c=>reject(Error('fixture exit '+c)));createInterface({input:fixture.stdout}).once('line',l=>{clearTimeout(t);resolve(JSON.parse(l))})});
-  browser=await chromium.launch({headless:true,channel:'chrome'});
+  browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'});
   const checks=[],errors=[];
   for(const width of [390,360]){
    const ctx=await browser.newContext({viewport:{width,height:860},isMobile:true,hasTouch:true});
@@ -58,7 +58,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
    // 6. Plain tap on the Next card still opens the next chapter.
    await openEnd();await page.locator('.wb-end .wb-next strong').tap();await page.waitForFunction(id=>document.querySelector('.wb-reader')?.dataset.read===id,B,{timeout:5000});checks.push('tap on Next card opens next chapter '+width);
    // 6b. A diagonal thumb swipe (~40°, up and left, eased like a real finger) from each control turns the page,
-   // exactly as it does from plain text (James, 19 Oct).
+   // exactly as it does from plain text (owner request, 19 Oct).
    for(const [sel,label] of [['.wb-end .wb-discuss','Discuss with AI'],['.wb-end .wb-next strong','Next card title'],['.wb-end .wb-next .wb-next-copy small','Next card art']]){
     await openEnd();const b=await page.locator(sel).first().boundingBox(),x=b.x+b.width*.6,y=b.y+b.height/2,DX=-Math.min(160,width*.42),DY=DX*.84;
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});

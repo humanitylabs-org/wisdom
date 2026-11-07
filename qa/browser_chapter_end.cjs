@@ -1,7 +1,7 @@
-// Thales: (1) Back from a chapter's cover turns to the previous chapter's last page (key, left tap, swipe);
+// Build worker: (1) Back from a chapter's cover turns to the previous chapter's last page (key, left tap, swipe);
 // the first chapter's cover stays put. (2) Every chapter's end page offers "Discuss with AI", which opens a
 // whole-chapter discussion (no passage), closes on Back and leaves the reader open.
-// Real HTTP fixture + shared WizardApp core, disposable data. James, 18 Oct 2026.
+// Real HTTP fixture + shared WizardApp core, disposable data. owner request, 18 Oct 2026.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn}=require('child_process'),{createInterface}=require('readline');
 const fs=require('fs'),path=require('path'),assert=require('assert');
@@ -11,7 +11,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
  let browser;
  try{
   const info=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('fixture timeout')),15000);fixture.once('exit',c=>reject(Error('fixture exit '+c)));createInterface({input:fixture.stdout}).once('line',l=>{clearTimeout(t);resolve(JSON.parse(l))})});
-  browser=await chromium.launch({headless:true,channel:'chrome'});
+  browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'});
   const checks=[],errors=[];
   for(const width of [390,360]){
    const ctx=await browser.newContext({viewport:{width,height:860},isMobile:true,hasTouch:true});
@@ -34,7 +34,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
    await page.keyboard.press('ArrowRight');await ready(B);assert.equal((await state()).at,'opener');
    const stage=page.locator('.wb-stage'),box=await stage.boundingBox();
    // Left-edge tap on B's cover.
-   // Touch input (a mouse no longer taps or swipes pages: desktop uses edge arrows, keys and wheel, James 19 Oct).
+   // Touch input (a mouse no longer taps or swipes pages: desktop uses edge arrows, keys and wheel, owner request, 19 Oct).
    await page.touchscreen.tap(box.x+20,box.y+box.height/2);await atEnd(A,'left tap');
    // Swipe right on B's cover.
    await page.keyboard.press('ArrowRight');await ready(B);
@@ -57,7 +57,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
    const ov=await page.evaluate(()=>({title:document.querySelector('.wd-header h2').textContent,sub:document.querySelector('.wd-subtitle').textContent,quote:document.querySelector('.wd-quote').hidden,chips:[...document.querySelectorAll('.wd-chip')].map(b=>b.textContent),ph:document.querySelector('.wd-composer textarea').placeholder,label:document.querySelector('.wd-panel').getAttribute('aria-label')}));
    const entry=data.entries.find(e=>e.id===A);
    assert.equal(ov.title,'Discuss with AI');assert.equal(ov.sub,entry.title);assert.equal(ov.quote,true,'no passage box');
-   assert.deepEqual(ov.chips,['Big idea','Apply it','Challenge']);assert.equal(ov.ph,'Ask about this chapter…');assert.equal(ov.label,'Chapter discussion');
+   assert.deepEqual(ov.chips,['Summarize','Simplify','Apply','Challenge']);assert.equal(ov.ph,'Ask about this chapter…');assert.equal(ov.label,'Chapter discussion');
    assert.deepEqual(posts.at(-1),{entry_id:A,body_sha256:entry.body_sha256,scope:'chapter'});
    await page.screenshot({path:path.join(evidence,`discuss-${width}.png`)});
    // Back closes the discussion and keeps the reader on the end page.

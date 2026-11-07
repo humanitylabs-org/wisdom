@@ -19,10 +19,10 @@ PORT = int(os.environ.get('WISDOM_PORT', '9200'))
 # The private route adapter rewrites the browser Origin to the legacy apps origin.
 ORIGINS = set(filter(None, os.environ.get('WISDOM_ORIGINS', '').split(',')))
 HOSTS = {urlsplit(o).netloc for o in ORIGINS}
-STATIC = {'discussions.js', 'discussions.css', 'index.html', 'app.js', 'wisdom.js', 'base.css', 'wisdom.css', 'collections.css', 'app.css',
+STATIC = {'sw.js', 'offline-sw.js', 'offline-kit.js', 'offline.js', 'discussions.js', 'discussions.css', 'index.html', 'app.js', 'wisdom.js', 'base.css', 'wisdom.css', 'collections.css', 'app.css',
           'icon.svg', 'icon-192.png', 'icon-512.png', 'manifest.webmanifest', 'manage.js', 'manage.css',
           'wizard-appearance.js', 'wizard-appearance.css', 'wizard-tokens.css', 'wizard-ui.css', 'wizard-sheet.js'}
-# Collection requests are built by a real Archimedes run, admitted exactly like Wizard's own client does
+# Collection requests are built by a real Wizard agent run, admitted exactly like Wizard's own client does
 # (wizard-os-home live.js send()): create a wizard-mobile session, then start a run in it.
 # WISDOM_ADMIT=stub fakes admission (tests/QA never spawn builds); WISDOM_ADMIT=fail simulates an outage.
 WIZARD_ORIGIN = os.environ.get('WISDOM_WIZARD_ORIGIN', '')
@@ -275,7 +275,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('X-Robots-Tag', 'noindex, nofollow')
         self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
-        self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'")
+        self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'")
         for k, v in (headers or {}).items():
             self.send_header(k, v)
         self.end_headers()
@@ -322,6 +322,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, {'bundles': library.list_bundles(c), 'source': library.source()})
         if path == '/mcp':
             return self.send(405, {'error': 'Use POST for stateless MCP'})
+        if path == '/api/wisdom/metadata':
+            with db() as c:
+                return self.send(200, wisdom.state(c, metadata=True))
+        match = re.fullmatch(r'/api/wisdom/chapter/([a-z0-9-]{1,64})', path)
+        if match:
+            with db() as c:
+                try:
+                    return self.send(200, wisdom.chapter(c, match[1]))
+                except (ValueError, OSError):
+                    return self.send(404, {'error': 'Chapter unavailable; reopen your library'})
         if path == '/api/wisdom':
             with library.LOCK, db() as c:
                 return self.send(200, wisdom.state(c))
@@ -373,6 +383,34 @@ class Handler(BaseHTTPRequestHandler):
         origin = self.headers.get('Origin')
         allowed = ORIGINS | ({f'http://{host}'} if local else set())
         return ok and (not origin or origin in allowed) and self.headers.get('Sec-Fetch-Site') != 'cross-site'
+
+    def offline_mutation(self, c, path, data, fn):
+        """Idempotency receipt and edit commit together; replay after a lost reply is safe.
+
+        Lazy schema: a read-only launch/update never changes owner state.
+        Receipts store only a payload digest and highlight id, not another library copy.
+        """
+        key = self.headers.get('X-Wizard-Offline-Id')
+        if not key:
+            return fn(c, data)
+        if not re.fullmatch(r'[a-f0-9-]{36}', key):
+            raise ValueError('Invalid offline operation id')
+        import hashlib
+        digest = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
+        c.execute('CREATE TABLE IF NOT EXISTS wisdom_offline_receipts (id TEXT PRIMARY KEY, path TEXT NOT NULL, digest TEXT NOT NULL, result TEXT NOT NULL)')
+        old = c.execute('SELECT path,digest,result FROM wisdom_offline_receipts WHERE id=?', (key,)).fetchone()
+        if old:
+            if old[0] != path or old[1] != digest:
+                raise ValueError('Offline operation id already used for a different change')
+            if path.endswith('/reaction'):
+                return wisdom.state(c)
+            return dict(json.loads(old[2]), highlights=wisdom.highlights(c))
+        # _highlight relies on the same library.LOCK held by do_POST, without
+        # the convenience wrapper's inner commit splitting edit from receipt.
+        result = wisdom._highlight(c, data) if path.endswith('/highlight') else fn(c, data)
+        receipt = {k: v for k, v in result.items() if k in ('id', 'removed', 'merged')}
+        c.execute('INSERT INTO wisdom_offline_receipts VALUES (?,?,?,?)', (key, path, digest, json.dumps(receipt)))
+        return result
 
     def do_POST(self):
         if not self.allowed_write():
@@ -457,12 +495,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, out)
             if path == '/api/wisdom/reaction':
                 with library.LOCK, db() as c:
-                    result = wisdom.react(c, data)
+                    result = self.offline_mutation(c, path, data, wisdom.react)
                     c.commit()
                     return self.send(200, result)
             if path == '/api/wisdom/highlight':
                 with library.LOCK, db() as c:
-                    result = wisdom.highlight(c, data)
+                    result = self.offline_mutation(c, path, data, wisdom.highlight)
                     c.commit()  # A successful response must already be durable.
                     return self.send(200, result)
             if path == '/api/wisdom/request':

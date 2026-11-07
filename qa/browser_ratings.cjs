@@ -1,4 +1,4 @@
-// Run on Thales: real app + shared client, disposable data; no owner mutations.
+// Run on the build worker: real app + shared client, disposable data; no owner mutations.
 const {chromium}=require(process.env.PLAYWRIGHT_DIR);
 const {spawn}=require('child_process'),{createInterface}=require('readline');
 const fs=require('fs'),assert=require('assert');
@@ -6,7 +6,7 @@ const fs=require('fs'),assert=require('assert');
  const fixture=spawn(process.env.PYTHON||'python3',['-m','qa.browser_fixture'],{env:process.env,stdio:['ignore','pipe','inherit']});let browser;
  try{
   const info=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('fixture timeout')),15000);fixture.once('exit',c=>reject(Error('fixture exit '+c)));createInterface({input:fixture.stdout}).once('line',l=>{clearTimeout(t);resolve(JSON.parse(l))})});
-  browser=await chromium.launch({headless:true,channel:'chrome'});const checks=[];
+  browser=await chromium.launch({headless:true,channel:process.env.WISDOM_QA_BROWSER||'chrome'});const checks=[];
   for(const width of [360,412]){
    const ctx=await browser.newContext({viewport:{width,height:915},isMobile:true,hasTouch:true});const p=await ctx.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
    const base=info.url,id='example-chapter';
@@ -29,8 +29,8 @@ const fs=require('fs'),assert=require('assert');
    const box=await up.boundingBox(),cdp=await ctx.newCDPSession(p),x=box.x+box.width/2,y=box.y+box.height/2;
    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:x-10,y}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+3,y:y+2}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+10,y:y+3}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
    assert.equal(await up.getAttribute('aria-pressed'),'true');await p.waitForTimeout(1200);assert.equal(await saved(),1);checks.push('20px thumb roll does not steal rating tap '+width);
-   fail=true;await down.tap();assert.equal(await down.getAttribute('aria-pressed'),'true');await p.waitForTimeout(1200);assert.equal(await up.getAttribute('aria-pressed'),'true');assert.equal(await saved(),1);checks.push('failed save restores confirmed rating '+width);
-   await down.tap();await p.waitForTimeout(1200);assert.equal(await saved(),-1);await p.reload();await p.waitForSelector('.wb-reader[data-at="end"]');assert.equal(await down.getAttribute('aria-pressed'),'true');checks.push('retry and reload retain persisted rating '+width);
+   fail=true;await down.tap();assert.equal(await down.getAttribute('aria-pressed'),'true');await p.waitForTimeout(1200);assert.equal(await down.getAttribute('aria-pressed'),'true');assert.equal(await saved(),1);assert((await p.evaluate(()=>WisdomOffline.status())).pending>0);checks.push('transient save failure retains latest intent in durable outbox '+width);
+   await p.evaluate(()=>WisdomOffline.flush());assert.equal(await saved(),-1);await p.reload();await p.waitForSelector('.wb-reader[data-at="end"]');assert.equal(await down.getAttribute('aria-pressed'),'true');checks.push('outbox retry and reload retain persisted rating '+width);
    assert.deepEqual(errors,[]);await ctx.close();
   }
   const result={status:'pass',host:require('os').hostname(),checks};fs.writeFileSync(process.env.WISDOM_QA_EVIDENCE+'/ratings.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));

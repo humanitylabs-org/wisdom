@@ -81,6 +81,13 @@
 .wb-deeper b{color:var(--wb-gold);font-weight:700}
 .wb-deeper.is-done{color:var(--wb-mute);cursor:default}
 .wb-deeper.is-ready{border-color:var(--wb-gold)}
+.wb-go-deeper{gap:14px;min-height:84px;padding:12px 16px 12px 12px;border-color:var(--wb-gold)}
+.wb-go-deeper .wb-go-art{flex:0 0 48px;width:48px;height:64px;border-radius:8px;object-fit:cover;overflow:hidden}
+.wb-go-deeper .wb-go-art.wb-mosaic,.wb-go-deeper .wb-go-art.wb-initial{display:grid;place-items:center}
+.wb-go-copy{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.wb-go-copy small{color:var(--wb-gold);font:700 .625rem/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase}
+.wb-go-copy strong{font:600 1.1875rem/1.15 var(--wb-display);overflow-wrap:anywhere}
+.wb-go-copy span{color:var(--wb-mute);font:500 .8125rem/1.3 var(--sans)}
 .wb-end-quiet{display:flex;align-items:center;gap:6px;margin-top:auto}
 .wb-quiet{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;border:0;background:transparent;color:var(--wb-mute);font:600 var(--wz-text-md)/1 var(--sans);text-decoration:none;cursor:pointer}
 .wb-quiet:first-child{margin-left:-10px}
@@ -94,7 +101,7 @@
 .wb-back-quiet{display:block;margin:6px 0 0;padding:14px 0;color:var(--wb-gold);font:600 var(--wz-text-lg)/1.3 var(--sans);text-decoration:none}
 .wb-back-quiet:active{opacity:.7}
 
-/* Shelves: the cover at the left edge lights up in colour (James, 10 Oct); no progress bar under covers. */
+/* Shelves: the cover at the left edge lights up in colour (owner request, 10 Oct); no progress bar under covers. */
 .wb-cover .wb-portrait{filter:grayscale(1) contrast(1.12) brightness(.92);transition:filter .5s ease,transform .6s}
 .wb-cover.lit .wb-portrait{filter:none}
 .wb-cover:hover .wb-portrait{filter:grayscale(1) contrast(1.12) brightness(.92)}

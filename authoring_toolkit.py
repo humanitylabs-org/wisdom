@@ -13,9 +13,11 @@ LIMIT = 1024 * 1024
 FILES = (
     'LICENSE', 'authoring_contract.py', 'authoring_admission.py', 'library.py', 'collection_revision.py',
     'tools/author_chapter.py', 'tools/author_collection.py',
-    'authoring/workflow.json', 'authoring/prompt.md',
+    'authoring/workflow.json', 'authoring/prompt.md', 'authoring/collection-rules.md',
+    'authoring/form-prompts.json',
     'docs/authoring/PINNED-WORKFLOW.md', 'docs/authoring/README.md',
-    'docs/authoring/SHARED-THINKERS.md',
+    'docs/authoring/SHARED-THINKERS.md', 'docs/authoring/COLLECTION-RULES.md',
+    'docs/authoring/PERSONALIZATION.md',
 )
 DOCS = tuple(n for n in FILES if n.startswith('docs/'))
 
@@ -50,6 +52,7 @@ def snapshot():
         raise ValueError('Release toolkit ZIP exceeds size limit')
     c = authoring_contract.contract()
     identity = {k: c[k] for k in ('id', 'version', 'workflow_sha256', 'prompt_sha256')}
+    identity['collection_rules_sha256'] = c['collection_rules']['sha256']
     identity['toolkit_sha256'] = sha(raw)
     c.update(contract_sha256=sha(json.dumps(identity, sort_keys=True, separators=(',', ':')).encode()),
              contract_identity=identity,

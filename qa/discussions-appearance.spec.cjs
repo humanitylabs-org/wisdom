@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
 (async()=>{
  const url=process.env.WISDOM_HOST_URL;assert(url,'WISDOM_HOST_URL required');
  const out=process.env.QA_OUT;assert(out,'QA_OUT required');fs.mkdirSync(out,{recursive:true});
- const browser=await chromium.launch({channel:'chrome',headless:true}),checks=[];
+ const browser=await chromium.launch({channel:process.env.WISDOM_QA_BROWSER||'chrome',headless:true}),checks=[];
  try {for(const width of [360,412,1280]){
   const context=await browser.newContext({viewport:{width,height:900},isMobile:width<900,hasTouch:true});
   const page=await context.newPage();page.on('pageerror',e=>console.log('PAGE ERROR',e.message));

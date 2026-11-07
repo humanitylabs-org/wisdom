@@ -395,7 +395,7 @@
 .wisdom-views>a{flex:1 0 auto;padding:0 9px;font-size:var(--wz-text-md);gap:4px}
 .wisdom-views>a>span{padding:1px 6px;font-size:var(--wz-text-sm)}
 .wb-cover-new{position:absolute;left:8px;top:8px;padding:3px 8px;border-radius:999px;background:var(--wb-gold);color:var(--wz-base);font:700 var(--wz-text-sm)/1.2 var(--sans);letter-spacing:.1em;text-transform:uppercase;box-shadow:0 2px 8px color-mix(in srgb, var(--wz-base) 40%, transparent)}
-/* Foreign-language glosses (James, 12 Oct): thin dotted underline; tap for romanisation + meaning. */
+/* Foreign-language glosses (owner request, 12 Oct): thin dotted underline; tap for romanisation + meaning. */
 .wb-gloss{text-decoration:underline dotted color-mix(in srgb, var(--wz-warning) 75%, transparent);text-decoration-thickness:1.5px;text-underline-offset:.24em;cursor:pointer;border-radius:3px;-webkit-tap-highlight-color:transparent;transition:background .15s}
 .wb-gloss.on{background:color-mix(in srgb, var(--wz-warning) 18%, transparent)}
 .wb-gloss:focus-visible{outline:2px solid var(--wb-gold);outline-offset:2px}
@@ -410,7 +410,7 @@
 .wb-gp-note{margin:8px 0 0;color:var(--wb-ink2);font-size:calc(var(--wz-text-heading) * 13.5 / 17);line-height:1.45}
 .wb-glosspop small{display:block;margin-top:10px;color:var(--wb-mute);font:700 var(--wz-text-sm)/1 var(--sans);letter-spacing:.12em;text-transform:uppercase}
 
-/* Home (James, 12 Oct): Currently reading → Suggested → Search → Request a new collection. */
+/* Home (owner request, 12 Oct): Currently reading → Suggested → Search → Request a new collection. */
 .wb-reading{margin-top:30px}
 .wb-reading-list{list-style:none;margin:0;padding:0 14px;display:flex;flex-direction:column;gap:10px}
 .wb-reading-row{display:flex;align-items:center;gap:14px;padding:10px 12px 10px 10px;border:1px solid var(--line);border-radius:16px;background:var(--wz-base);color:var(--ink);text-decoration:none;min-height:96px}
@@ -527,7 +527,7 @@
 
 .wb-head .wb-head-link{color:var(--wb-gold);font:600 var(--wz-text-md)/1 var(--sans);text-decoration:none;white-space:nowrap}
 
-/* Desktop reading, Kindle-style (James, 19 Oct 2026): a mouse selects text instead of swiping, and pages turn with
+/* Desktop reading, Kindle-style (owner request, 19 Oct 2026): a mouse selects text instead of swiping, and pages turn with
    edge arrows, the arrow keys or the wheel. Touch screens keep swipe and tap zones; the arrows never show there. */
 .wb-turn,.wb-mouse-hint{display:none}
 @media (hover:hover) and (pointer:fine){

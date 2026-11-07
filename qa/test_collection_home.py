@@ -11,3 +11,11 @@ class CollectionHome(unittest.TestCase):
         result = subprocess.run([os.environ.get('NODE', 'node'), 'qa/home_model.cjs'],
                                 cwd=root, text=True, capture_output=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
+class GoDeeper(unittest.TestCase):
+    def test_go_deeper_card(self):
+        root = Path(__file__).resolve().parents[1]
+        result = subprocess.run([os.environ.get('NODE', 'node'), 'qa/go_deeper_model.cjs'],
+                                cwd=root, text=True, capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

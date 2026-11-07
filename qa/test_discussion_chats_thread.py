@@ -1,4 +1,4 @@
-"""Ask AI as the owner's real Wizard Chats thread (James, 22 Oct 2026).
+"""Ask AI as the owner's real Wizard Chats thread (owner request, 22 Oct 2026).
 
 Wisdom finds or creates one Philosopher session per discussion, migrates empty main-agent
 threads, and visibly carries over earlier turns once without repeating them in the reply item.
@@ -197,11 +197,9 @@ class ChatsThread(unittest.TestCase):
         self.assertEqual(len(self.runs), 1)
 
     def test_hosted_client_requires_agent_aware_shell(self):
-        src = Path('static/discussions.js').read_text()
-        self.assertIn('window.WizardApp.nav?.threadAgents === true', src)
-        self.assertIn('{reply:r.reply, ...(r.agent ? {agent:r.agent} : {})', src)
-        self.assertIn('WizardApp.nav.threadDrafts === true ? {draft:{text}}', src)
-        self.assertIn('if (accepted !== true)', src)
+        completed = __import__('subprocess').run(['node', 'qa/chats-handoff-source.test.cjs'], capture_output=True, text=True, timeout=10)
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertIn('PASS exact agent-aware', completed.stdout)
 
     def test_not_connected_is_honest(self):
         with patch.object(self.server, 'ADMIT', 'disabled'):

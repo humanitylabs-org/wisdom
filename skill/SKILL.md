@@ -13,7 +13,8 @@ WAM installs **this file alone**; no repository or adjacent skill files are need
 ## Before any authoring or rewrite
 
 Call **wisdom_authoring_contract {}**. It returns the pin and prompt, the **full
-workflow documentation** in `documentation`, `contract_identity`,
+workflow documentation** in `documentation`, portable `collection_rules` (version,
+SHA256 and full text), supported special-form prompts in `forms`, `contract_identity`,
 `contract_sha256`, and an allowlisted toolkit manifest in `toolkit`.
 Read every returned documentation value before authoring. These app-owned
 instructions apply on every installation, including its creator's. The pin is
@@ -22,7 +23,13 @@ A default orchestrator may research, prepare sources, validate and package; it m
 **not** author or rewrite prose. Missing route is a blocker, not permission to use
 another model. This version has no owner-override interface.
 
-Use compression v1: 450–900 words; source epigraph; own compression; 3+ bold-led
+Read `collection_rules.text` before planning. Plain topic/book collection titles,
+ONE big idea per chapter, primary sources first, named strongest critics and a
+separate cover teaser are required. Size the idea list, not a fixed quota. Shared
+bundles carry generic Why today text, never a private reader's projects or memory.
+Personalization is designed separately; this release does not implement it.
+
+By default use compression v1: 450–900 words; source epigraph; own compression; 3+ bold-led
 movements; Why today; Carry this question; numbered Sources. Normally 10–12
 chapters plus overview. Research and verify primary texts and serious opposing
 scholarship first; snippets are not source packets. Keep all owner briefs,
@@ -60,9 +67,11 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 MAX = 1024 * 1024
 ALLOW = {'LICENSE', 'authoring_contract.py', 'authoring_admission.py', 'library.py', 'collection_revision.py',
          'tools/author_chapter.py', 'tools/author_collection.py',
-         'authoring/workflow.json', 'authoring/prompt.md',
+         'authoring/workflow.json', 'authoring/prompt.md', 'authoring/collection-rules.md',
+         'authoring/form-prompts.json',
          'docs/authoring/PINNED-WORKFLOW.md', 'docs/authoring/README.md',
-         'docs/authoring/SHARED-THINKERS.md'}
+         'docs/authoring/SHARED-THINKERS.md', 'docs/authoring/COLLECTION-RULES.md',
+         'docs/authoring/PERSONALIZATION.md'}
 base = os.environ['WISDOM_ENDPOINT'].rstrip('/')
 u = urlsplit(base)
 if u.scheme not in ('http', 'https') or not u.hostname or u.username or u.password or u.query or u.fragment:
@@ -85,6 +94,7 @@ t = c['toolkit']
 if (c['provider'], c['model'], c['fallback'], t['format']) != ('anthropic', 'claude-opus-5-5', False, 'wisdom-author-toolkit-v1'):
     raise ValueError('Unsupported installed author contract')
 identity = {k: c[k] for k in ('id', 'version', 'workflow_sha256', 'prompt_sha256')}
+identity['collection_rules_sha256'] = c['collection_rules']['sha256']
 identity['toolkit_sha256'] = t['sha256']
 if identity != c['contract_identity'] or sha(json.dumps(identity, sort_keys=True, separators=(',', ':')).encode()) != c['contract_sha256']:
     raise ValueError('Invalid contract identity')
@@ -110,6 +120,8 @@ with zipfile.ZipFile(io.BytesIO(raw)) as z:
         files[i.filename] = b
 if sha(files['authoring/workflow.json']) != c['workflow_sha256'] or sha(files['authoring/prompt.md']) != c['prompt_sha256']:
     raise ValueError('Workflow/prompt differs from contract')
+if sha(files['authoring/collection-rules.md']) != c['collection_rules']['sha256'] or files['authoring/collection-rules.md'].decode() != c['collection_rules']['text']:
+    raise ValueError('Collection rules differ from contract')
 if any(files[n].decode('utf-8') != text for n, text in c['documentation'].items()):
     raise ValueError('Workflow documentation differs from toolkit')
 dest = Path(os.environ['WISDOM_TOOLKIT_DIR']).absolute()
@@ -126,7 +138,8 @@ print(json.dumps({'toolkit_dir': str(dest), 'contract_sha256': c['contract_sha25
 ```
 
 After verification, read the retrieved `docs/authoring/PINNED-WORKFLOW.md`,
-`README.md` and `SHARED-THINKERS.md` in full. All helper Python dependencies ship
+`README.md`, `SHARED-THINKERS.md`, `COLLECTION-RULES.md` and
+`authoring/collection-rules.md` in full. All helper Python dependencies ship
 inside this toolkit; there are no pip dependencies. Run from the toolkit directory:
 
 ```sh
@@ -139,7 +152,9 @@ CLI; do not install credentials or run a host CLI inside the reader container.
 For each chapter, prepare a UTF-8 brief and JSON source array of `{url,text}` with
 verbatim researched text. Run `tools/author_chapter.py --chapter "$CHAPTER_ID"
 --brief "$BRIEF" --sources "$SOURCES" --output "$NEW_MD" --receipt "$NEW_RECEIPT"`.
-Use fresh paths. The helper enforces the pinned CLI route, no tools/fallback,
+For a requested special form, add `--format wisdom.scripture-study.v1` or
+`--format wisdom.symbolic-story.v1` as described in the portable rules; each has
+its own versioned prompt and receipt format. Use fresh paths. The helper enforces the pinned CLI route, no tools/fallback,
 actual modelUsage, quotations and format. If a draft fails those checks the
 helper itself re-asks the same pinned model with the error (up to three drafts
 in one budget). Exit 0 with a receipt means an edition. Any other exit means
