@@ -10,7 +10,7 @@ home_screen:
   offline: true                        # a pinned Wisdom opens offline; route and reading place live in the wisdom- WizOffline replica
   position_keys: ["wisdom:*:pos:*"]    # per-chapter reading place (wisdom.js posKey), kept per pin
   route_state: wisdom                  # history.state.wisdom: Wisdom restores its own route at boot
-version: 0.4.0-private.36
+version: 0.4.0-private.37
 summary: Deep reader for imported collections, with highlights, glosses, documented API and MCP.
 license: MIT
 source: .
@@ -62,6 +62,9 @@ system: false
 uses: []
 needs: []
 health: /healthz
+switches:
+  contract: wizard.app-switches/1
+  path: /api/switches
 ---
 
 # Wisdom
