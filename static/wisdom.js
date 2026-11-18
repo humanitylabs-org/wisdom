@@ -603,6 +603,11 @@ async function postRequest(body){
   if(Math.max(1,Math.floor(left/pageW)+1)===textPages&&r.querySelector('.wb-stage').clientWidth===pageW)return;
   layout(true);
  }
+ // The first layout of a reader can find a zero-size stage (route swap); retry each frame until it has a size.
+ function layoutWhenSized(r,generation,tries){
+  if(generation!==layoutGeneration||reader()!==r||!r.isConnected||pageW>0)return;
+  layout(false);if(!(pageW>0)&&tries<600)requestAnimationFrame(()=>layoutWhenSized(r,generation,tries+1));
+ }
  const fontsSettled=()=>{const r=reader();if(r)refitAfterFonts(r,layoutGeneration)};
  document.fonts?.addEventListener?.('loadingdone',fontsSettled);
  document.fonts?.addEventListener?.('loadingerror',fontsSettled);
@@ -1113,7 +1118,12 @@ function highlightNodes(flow){
   r.querySelectorAll('.wb-flow p').forEach(p=>{if(p.children.length===1&&p.firstElementChild.tagName==='STRONG'&&p.textContent.trim()===p.firstElementChild.textContent.trim())p.classList.add('wb-keyline')});
   paint(r);
   const generation=++layoutGeneration;
+  // A freshly rendered reader owns no page yet (wisdom#16): the previous chapter's page/pages must not survive a
+  // first layout that bails on a zero-size stage, or a later font/resize relayout reads them as "was on the last
+  // page" and jumps (and saves) the new chapter's end. pageW=0 also keeps go() from saving a place until laid out.
+  page=0;pages=1;pageW=0;textFrom=0;textPages=1;exactFrac=null;textAnchor=null;
   layout(false);
+  if(!(pageW>0))requestAnimationFrame(()=>layoutWhenSized(r,generation,0));
   // Layout requests this chapter's used faces; read ready only afterwards.
   // The captured reader/generation cannot move a subsequently opened chapter.
   (document.fonts?.ready||Promise.resolve()).then(()=>refitAfterFonts(r,generation));
