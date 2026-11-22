@@ -39,5 +39,16 @@ function harness(){
  // wisdom#16 (22 Nov): the forward turn must ignore B's saved place (read before / this device near its end).
  await test('forward-into-next-chapter-ignores-its-saved-place',async()=>{const h=harness();h.positions.set('b','0.96');h.c.landStart='b';intoNextAtZeroSize(h);h.runFrames();assert.equal(h.c.page,0,'forward restored B\'s saved place');assert.equal(h.positions.get('b'),'0');h.c.layout(true);assert.equal(h.c.page,0);assert.equal(h.c.landStart,'')});
  await test('stale-forward-landing-does-not-apply-to-another-chapter',async()=>{const h=harness();h.positions.set('b','0.25');h.c.landStart='c';intoNextAtZeroSize(h);h.c.layout(true);assert.equal(h.c.page,3);assert.equal(h.c.landStart,'')});
+ // James (22 Nov 2026): reopening a chapter already finished opens its cover, saving nothing; a part-way place
+ // (incl. a re-read in progress) still resumes; relayouts on the end page keep the end page.
+ const reopen=(h,local,entry)=>{if(local!==undefined)h.positions.set('b',local);Object.assign(h.c.data.entries[1],entry||{});const calls=[];h.c.api=async(p,b)=>{calls.push(b);return {}};intoNextAtZeroSize(h);h.runFrames();return calls};
+ const flush=()=>new Promise(r=>setTimeout(r,0));
+ await test('reopen-finished-device-end-opens-cover-saving-nothing',async()=>{const h=harness();const calls=reopen(h,'1',{read:true,progress:100});await flush();assert.equal(h.c.page,0,'finished chapter reopened on its end page');assert.equal(h.positions.get('b'),'1','opening overwrote the saved place');assert.equal(calls.length,0,'opening wrote progress to the server');h.c.layout(true);assert.equal(h.c.page,0);assert.equal(h.positions.get('b'),'1');h.c.go(1,false);await flush();assert.equal(h.positions.get('b'),String(1/12),'a page turn saves as normal');assert.equal(calls.length,1)});
+ await test('reopen-finished-near-end-place-opens-cover',async()=>{const h=harness();const calls=reopen(h,'0.96',{read:true,progress:100});await flush();assert.equal(h.c.page,0);assert.equal(h.positions.get('b'),'0.96');assert.equal(calls.length,0)});
+ await test('reopen-finished-server-100-opens-cover',async()=>{const h=harness();const calls=reopen(h,undefined,{read:true,progress:100});await flush();assert.equal(h.c.page,0);assert(!h.positions.has('b'));assert.equal(calls.length,0)});
+ await test('reopen-end-place-on-stale-unread-snapshot-opens-cover',async()=>{const h=harness();reopen(h,'1',{read:false,progress:100});assert.equal(h.c.page,0)});
+ await test('reopen-read-chapter-device-cover-place-writes-no-zero',async()=>{const h=harness();const calls=reopen(h,'0',{read:true,progress:100});await flush();assert.equal(h.c.page,0);assert.equal(calls.length,0,'opening a read chapter on its cover wrote progress 0');h.c.go(1,false);await flush();assert.equal(calls.length,1)});
+ await test('reopen-reread-in-progress-resumes',async()=>{const h=harness();reopen(h,'0.4',{read:true,progress:40});assert.equal(h.c.page,5)});
+ await test('relayout-on-end-page-keeps-end-page',async()=>{const h=harness();h.c.page=12;h.c.layout(true);assert.equal(h.c.page,12);h.setCols(13);h.c.layout(true);assert.equal(h.c.page,h.c.pages-1)});
  console.log(JSON.stringify({kind:'source-only-no-native-or-browser',results},null,2));if(results.some(x=>x.status==='failed'))process.exitCode=1;
 })();

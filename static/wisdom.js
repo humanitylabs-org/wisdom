@@ -11,7 +11,7 @@ const Wisdom = (() => {
  // current book here; browser history alone cannot survive frame recreation.
  const openKey='wisdom:'+new URL('.',location.href).pathname+':open';
  const bookRoute=hash=>/^#\/(?:read|collection)\/[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)?$/.test(hash);
- let resumedRoute='';const RESUME_MS=60000;
+ const RESUME_MS=60000;
  addEventListener('pagehide',()=>saveOpenRoute());
  function restoreRoute(){
   // Explicit links (including #/ for Home) always take precedence.
@@ -19,7 +19,6 @@ const Wisdom = (() => {
   // Only a reload or shell frame recreation within a minute of leaving resumes the open book directly.
   try{localStorage.removeItem(openKey)}catch{}
   if(!location.hash){try{const saved=JSON.parse(sessionStorage.getItem(openKey)||'null');if(saved&&bookRoute(saved.hash)&&Date.now()-saved.at<RESUME_MS)history.replaceState(history.state,'',saved.hash)}catch{}}
-  resumedRoute=location.hash;
  }
  function saveOpenRoute(){
   try{if(bookRoute(location.hash))sessionStorage.setItem(openKey,JSON.stringify({hash:location.hash,at:Date.now()}));else sessionStorage.removeItem(openKey)}catch{}
@@ -27,7 +26,7 @@ const Wisdom = (() => {
  function validateOpenRoute(){
   const [,kind,id,collection]=parseRoute();
   if((kind==='read'&&(!data.entries.some(e=>e.id===id)||(collection&&!colById(collection))))||(kind==='collection'&&!colById(id))){
-   history.replaceState(history.state,'',location.pathname+location.search);currentRoute=location.hash;resumedRoute='';
+   history.replaceState(history.state,'',location.pathname+location.search);currentRoute=location.hash;
   }
   saveOpenRoute();
  }
@@ -657,7 +656,11 @@ async function postRequest(body){
   // Forward from a chapter's end always opens the next chapter's cover, whatever place that chapter saved earlier
   // (read before, partly read, this device's last page). One turn is one page (owner request, 22 Nov 2026, wisdom#16).
   else if(landStart&&landStart===r.dataset.read){landStart='';page=0;exactFrac=null}
-  else{const e=data.entries.find(x=>x.id===r.dataset.read);let saved=(e?.progress||0)/100;try{const v=localStorage.getItem(posKey(r.dataset.read));if(v!==null)saved=Number(v)||0}catch{}page=e&&Number.isFinite(saved)&&saved>0&&(saved<1||(!e.read||location.hash===resumedRoute)&&saved<=1)?Math.round(saved*(pages-1)):0;exactFrac=page>0?{f:saved,page}:null}
+  // Opening a chapter resumes its saved place (this device's, else the synced percentage). A finished chapter (its
+  // saved place resolves to the last page: the end screen) opens on its cover instead. Opening a finished or read
+  // chapter on its cover saves nothing, so its progress and read state stay as they were until a page is turned
+  // (owner request, 22 Nov 2026).
+  else{const e=data.entries.find(x=>x.id===r.dataset.read);let saved=(e?.progress||0)/100;try{const v=localStorage.getItem(posKey(r.dataset.read));if(v!==null)saved=Number(v)||0}catch{}page=e&&Number.isFinite(saved)&&saved>0&&saved<=1?Math.round(saved*(pages-1)):0;if(page>=pages-1||page===0&&e&&(e.read||(Number(e.progress)||0)>=100)){page=0;r.dataset.coverHold=r.dataset.read}exactFrac=page>0?{f:saved,page}:null}
   go(page,false);
   if(anchored!==null)textAnchor={read:r.dataset.read,off:anchored,page};
  }
@@ -674,6 +677,7 @@ async function postRequest(body){
   r.dataset.at=page===0?'opener':page>=pages-1?'end':'text';
   // Desktop edge arrows hide where a click would do nothing.
   r.dataset.noPrev=String(page===0&&!r.dataset.prevRoute);r.dataset.noNext=String(page>=pages-1&&!r.querySelector('.wb-next'));
+  if(r.dataset.coverHold===e.id&&page===0)return;delete r.dataset.coverHold;
   const progress=Math.round(pages>1?page/(pages-1)*100:0);
   const keepExact=exactFrac&&exactFrac.page===page;
   try{localStorage.setItem(posKey(e.id),String(keepExact?exactFrac.f:pages>1?page/(pages-1):0))}catch{}

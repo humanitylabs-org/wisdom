@@ -16,7 +16,10 @@ const fs=require('fs'),assert=require('assert');
    for(let i=0;i<20&&await p.locator('.wb-reader').getAttribute('data-at')!=='end';i++)await p.keyboard.press('ArrowRight');
    await p.waitForSelector('.wb-reader[data-at="end"]');await p.waitForTimeout(650);
    // Normalize only disposable fixture state, then reload its real saved response.
-   await p.evaluate(async id=>{await fetch('api/wisdom/reaction',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'entry',id,field:'rating',value:0})})},id);await p.reload();await p.waitForSelector('.wb-reader[data-at="end"]');await p.waitForTimeout(600);
+   await p.evaluate(async id=>{await fetch('api/wisdom/reaction',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'entry',id,field:'rating',value:0})})},id);await p.reload();await p.waitForSelector('.wb-reader .wb-count');await p.waitForTimeout(650);
+   // Reopening a finished chapter opens its cover (owner request, 22 Nov 2026): turn back to the end page.
+   for(let i=0;i<40&&await p.locator('.wb-reader').getAttribute('data-at')!=='end';i++)await p.keyboard.press('ArrowRight');
+   await p.waitForSelector('.wb-reader[data-at="end"]');await p.waitForTimeout(600);
    let fail=false,requests=[],active=0,maxActive=0;
    await p.route('**/api/wisdom/reaction',async r=>{const d=r.request().postDataJSON();if(d.field!=='rating')return r.continue();requests.push(d.value);active++;maxActive=Math.max(maxActive,active);await new Promise(r=>setTimeout(r,900));if(fail){fail=false;active--;return r.fulfill({status:503,contentType:'application/json',body:'{"error":"fixture failure"}'})}const response=await r.fetch();active--;return r.fulfill({response})});
    const up=p.locator('[data-wisdom-rate][data-value="1"]'),down=p.locator('[data-wisdom-rate][data-value="-1"]');
@@ -30,7 +33,7 @@ const fs=require('fs'),assert=require('assert');
    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:x-10,y}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+3,y:y+2}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+10,y:y+3}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
    assert.equal(await up.getAttribute('aria-pressed'),'true');await p.waitForTimeout(1200);assert.equal(await saved(),1);checks.push('20px thumb roll does not steal rating tap '+width);
    fail=true;await down.tap();assert.equal(await down.getAttribute('aria-pressed'),'true');await p.waitForTimeout(1200);assert.equal(await down.getAttribute('aria-pressed'),'true');assert.equal(await saved(),1);assert((await p.evaluate(()=>WisdomOffline.status())).pending>0);checks.push('transient save failure retains latest intent in durable outbox '+width);
-   await p.evaluate(()=>WisdomOffline.flush());assert.equal(await saved(),-1);await p.reload();await p.waitForSelector('.wb-reader[data-at="end"]');assert.equal(await down.getAttribute('aria-pressed'),'true');checks.push('outbox retry and reload retain persisted rating '+width);
+   await p.evaluate(()=>WisdomOffline.flush());assert.equal(await saved(),-1);await p.reload();await p.waitForSelector('.wb-reader .wb-count');await p.waitForTimeout(650);for(let i=0;i<40&&await p.locator('.wb-reader').getAttribute('data-at')!=='end';i++)await p.keyboard.press('ArrowRight');await p.waitForSelector('.wb-reader[data-at="end"]');assert.equal(await down.getAttribute('aria-pressed'),'true');checks.push('outbox retry and reload retain persisted rating '+width);
    assert.deepEqual(errors,[]);await ctx.close();
   }
   const result={status:'pass',host:require('os').hostname(),checks};fs.writeFileSync(process.env.WISDOM_QA_EVIDENCE+'/ratings.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result));
