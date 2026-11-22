@@ -34,20 +34,22 @@ const OPENS=['collection','link','resume'];
    const ctx=await browser.newContext({viewport:{width,height:width<400?780:900},isMobile:true,hasTouch:true});
    await ctx.route(base+'qa-host.html',r=>r.fulfill({status:200,contentType:'text/html',body:'<!doctype html><meta name=viewport content="width=device-width"><style>body{margin:0}header{height:56px}iframe{position:fixed;top:56px;left:0;width:100%;height:calc(100% - 56px);border:0}</style><header>Morning</header><iframe id=frame></iframe>'}));
    // A reload / shell frame recreation within a minute of leaving the open chapter (restoreRoute's resume).
-   await ctx.addInitScript(()=>{try{const h=localStorage.getItem('qa-resume');if(h&&!location.pathname.endsWith('qa-host.html')){localStorage.removeItem('qa-resume');sessionStorage.setItem('wisdom:'+new URL('.',location.href).pathname+':open',JSON.stringify({hash:h,at:Date.now()}))}}catch{}});
+   await ctx.addInitScript(()=>{try{const h=location.protocol.startsWith('http')&&!location.pathname.endsWith('qa-host.html')&&localStorage.getItem('qa-resume');if(h){localStorage.removeItem('qa-resume');sessionStorage.setItem('wisdom:'+new URL('.',location.href).pathname+':open',JSON.stringify({hash:h,at:Date.now()}))}}catch{}});
    const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
    const posts=[];page.on('request',q=>{if(q.method()==='POST'&&q.url().includes('api/wisdom/reaction'))try{posts.push(q.postDataJSON())}catch{}});
    const row={label};rows.push(row);
    try{
-    await page.goto(base);await page.waitForSelector('.wb-home');
-    const data=await page.evaluate(async()=>(await fetch('api/wisdom')).json());
+    const data=await (await fetch(base+'api/wisdom')).json();
     const col=data.collections.find(c=>c.entries.filter(i=>i!==c.overview).length>=3);assert(col,'fixture needs a 3-chapter collection');
     const chapters=col.entries.filter(i=>i!==col.overview),A=chapters[0],B=chapters[1];
     const pk=id=>'wisdom:/:pos:'+id;
-    const seedB=async seed=>{await page.evaluate(async([B,seed])=>{const post=b=>fetch('api/wisdom/reaction',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+    // Seed B on the disposable server before this browser loads anything (so no cached library predates it), then
+    // this device's saved places.
+    const seedB=async seed=>{const post=async b=>{const r=await fetch(base+'api/wisdom/reaction',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});assert(r.ok,'seed '+r.status)};
      await post({kind:'entry',id:B,field:'read',value:false});await post({kind:'entry',id:B,field:'archived',value:false});
      if(seed.read)await post({kind:'entry',id:B,field:'done',value:true});
-     await post({kind:'entry',id:B,field:'progress',value:seed.progress})},[B,seed]);
+     await post({kind:'entry',id:B,field:'progress',value:seed.progress});
+     await page.goto(base);await page.waitForSelector('.wb-home');
      await page.evaluate(([kA,kB,local])=>{localStorage.setItem(kA,'0');if(local===undefined)localStorage.removeItem(kB);else localStorage.setItem(kB,local)},[pk(A),pk(B),seed.local])};
     let fr=page,off={x:0,y:0};
     const openUrl=async url=>{
