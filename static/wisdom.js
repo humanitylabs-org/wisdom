@@ -576,6 +576,7 @@ async function postRequest(body){
    ev.preventDefault();ev.stopPropagation();
    if(e.dataset.wisdomReaderBack){readerBack();return}
    if(e.dataset.wisdomBack&&history.state?.depth>0){history.back();return}
+   if(e.classList.contains('wb-next'))landStart=e.dataset.wisdomRoute.split('/')[2]||'';
    navigate(e.dataset.wisdomRoute,{replace:!!(e.dataset.wisdomReplace||e.dataset.wisdomBack)});
    if(e.dataset.wisdomFocus==='search')document.getElementById('wb-q')?.focus();
   });
@@ -589,7 +590,7 @@ async function postRequest(body){
   q.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();q.blur()}};
  }
  // Paged reader: one horizontal track of full-screen pages (story-style, not a book).
- const positionWrites=new Map();let opened='',exactFrac=null,landEnd='';
+ const positionWrites=new Map();let opened='',exactFrac=null,landEnd='',landStart='';
  const posKey=id=>'wisdom:'+new URL('.',location.href).pathname+':pos:'+id;
  const CTL_SLOP=24;let page=0,pages=1,pageW=0,textFrom=0,textPages=1,drag=null,suppressClick=false,textAnchor=null,mouseSel=null,lastPointer='',wheelAcc=0,wheelLock=0,wheelIdle=0;
  function reader(){return document.querySelector('.wb-reader')}
@@ -653,6 +654,9 @@ async function postRequest(body){
   else if(wasLead){exactFrac=null}
   else if(frac!==null){page=Math.round(frac*(pages-1));exactFrac=exact?{f:frac,page}:null}
   else if(landEnd&&landEnd===r.dataset.read){landEnd='';page=pages-1;exactFrac=null}
+  // Forward from a chapter's end always opens the next chapter's cover, whatever place that chapter saved earlier
+  // (read before, partly read, this device's last page). One turn is one page (owner request, 22 Nov 2026, wisdom#16).
+  else if(landStart&&landStart===r.dataset.read){landStart='';page=0;exactFrac=null}
   else{const e=data.entries.find(x=>x.id===r.dataset.read);let saved=(e?.progress||0)/100;try{const v=localStorage.getItem(posKey(r.dataset.read));if(v!==null)saved=Number(v)||0}catch{}page=e&&Number.isFinite(saved)&&saved>0&&(saved<1||(!e.read||location.hash===resumedRoute)&&saved<=1)?Math.round(saved*(pages-1)):0;exactFrac=page>0?{f:saved,page}:null}
   go(page,false);
   if(anchored!==null)textAnchor={read:r.dataset.read,off:anchored,page};
@@ -679,7 +683,7 @@ async function postRequest(body){
  }
  function step(d){
   const r=reader();if(!r)return;
-  if(d>0&&page>=pages-1){const n=r.querySelector('.wb-next');if(n)navigate(n.dataset.wisdomRoute,{replace:true});return}
+  if(d>0&&page>=pages-1){const n=r.querySelector('.wb-next');if(n){landStart=n.dataset.wisdomRoute.split('/')[2]||'';navigate(n.dataset.wisdomRoute,{replace:true})}return}
   // Back from a chapter's cover turns to the previous chapter's last page (owner request, 18 Oct).
   if(d<0&&page===0&&r.dataset.prevRoute){const to=r.dataset.prevRoute;landEnd=to.split('/')[2]||'';navigate(to,{replace:true});return}
   go(page+d);
@@ -1122,6 +1126,8 @@ function highlightNodes(flow){
   // first layout that bails on a zero-size stage, or a later font/resize relayout reads them as "was on the last
   // page" and jumps (and saves) the new chapter's end. pageW=0 also keeps go() from saving a place until laid out.
   page=0;pages=1;pageW=0;textFrom=0;textPages=1;exactFrac=null;textAnchor=null;
+  // A cross-chapter turn's one-shot landing belongs to the chapter it targeted only.
+  if(landStart&&landStart!==r.dataset.read)landStart='';if(landEnd&&landEnd!==r.dataset.read)landEnd='';
   layout(false);
   if(!(pageW>0))requestAnimationFrame(()=>layoutWhenSized(r,generation,0));
   // Layout requests this chapter's used faces; read ready only afterwards.
