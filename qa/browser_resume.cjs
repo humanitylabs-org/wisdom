@@ -15,6 +15,8 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
    let page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
    const base=info.url,route='#/read/example-chapter/example-collection';
    const ready=async()=>{await page.waitForSelector('.wb-reader');await page.evaluate(()=>document.fonts.ready);await page.waitForFunction(()=>!!document.querySelector('.wb-count')?.textContent);};
+   // Each viewport starts from an unread chapter (the shared disposable fixture keeps the previous one's progress).
+   for(const b of [{field:'read',value:false},{field:'progress',value:0}]){const r=await fetch(base+'api/wisdom/reaction',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:'entry',id:'example-chapter',...b})});assert(r.ok)}
    await page.goto('about:blank');await page.goto(base+'#/collection/example-collection');await page.waitForSelector('.wb-collection');
    await page.locator('[data-wisdom-route="/read/example-chapter/example-collection"]').first().click();await ready();
    await page.keyboard.press('ArrowRight');
