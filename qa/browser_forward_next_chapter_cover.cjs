@@ -23,7 +23,7 @@ const SEEDS={
 const INPUTS=['swipe','arrow','tap'];
 (async()=>{
  const evidence=process.env.WISDOM_QA_EVIDENCE;fs.mkdirSync(evidence,{recursive:true});
- const fixture=spawn(process.env.PYTHON||'python3',['-m','qa.browser_fixture'],{env:process.env,stdio:['ignore','pipe','inherit']});
+ const fixture=spawn(process.env.PYTHON||'python3',['-m','qa.browser_chapters_fixture'],{env:process.env,stdio:['ignore','pipe','inherit']});
  let browser;const failures=[],rows=[];
  try{
   const info=await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('fixture timeout')),15000);fixture.once('exit',c=>reject(Error('fixture exit '+c)));createInterface({input:fixture.stdout}).once('line',l=>{clearTimeout(t);resolve(JSON.parse(l))})});
