@@ -1,7 +1,7 @@
 // James (22 Nov 2026): "If I reopen a chapter I've already finished, clearly I want to start the chapter, not look at
 // its end-screen." Opening a chapter whose saved place resolves to its last page (this device's place 1 or 0.96,
 // synced progress 100, or an end place on a library snapshot that predates the done write) opens its COVER (1 / N),
-// and opening it saves nothing (no device place or server progress overwrite) until a page is turned. A chapter left
+// and opening a finished or read chapter on its cover saves nothing (no device place or server progress overwrite) until a page is turned. A chapter left
 // part-way, including a re-read in progress, still resumes. Opens: collection page (touch tap), deep link (Morning's
 // Read pick and Home links are deep links) and the reload/frame-recreation resume. Also: A+/A− on the end page keeps
 // the end page; Back from a chapter's cover still lands on the previous chapter's last page; one swipe = one page.
@@ -14,6 +14,7 @@ const SEEDS={
  local_end:{read:true,progress:100,local:'1',cover:true},
  local_near_end:{read:true,progress:100,local:'0.96',cover:true},
  server100:{read:true,progress:100,cover:true},
+ local_cover:{read:true,progress:100,local:'0',cover:true}, // read; this device last left it on its cover: no progress 0 write
  stale_unread_end:{read:false,progress:0,local:'1',cover:true},
  mid:{read:false,progress:50,local:'0.5'},
  reread:{read:true,progress:40,local:'0.4'},

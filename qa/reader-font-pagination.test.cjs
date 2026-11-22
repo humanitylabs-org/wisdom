@@ -47,6 +47,7 @@ function harness(){
  await test('reopen-finished-near-end-place-opens-cover',async()=>{const h=harness();const calls=reopen(h,'0.96',{read:true,progress:100});await flush();assert.equal(h.c.page,0);assert.equal(h.positions.get('b'),'0.96');assert.equal(calls.length,0)});
  await test('reopen-finished-server-100-opens-cover',async()=>{const h=harness();const calls=reopen(h,undefined,{read:true,progress:100});await flush();assert.equal(h.c.page,0);assert(!h.positions.has('b'));assert.equal(calls.length,0)});
  await test('reopen-end-place-on-stale-unread-snapshot-opens-cover',async()=>{const h=harness();reopen(h,'1',{read:false,progress:100});assert.equal(h.c.page,0)});
+ await test('reopen-read-chapter-device-cover-place-writes-no-zero',async()=>{const h=harness();const calls=reopen(h,'0',{read:true,progress:100});await flush();assert.equal(h.c.page,0);assert.equal(calls.length,0,'opening a read chapter on its cover wrote progress 0');h.c.go(1,false);await flush();assert.equal(calls.length,1)});
  await test('reopen-reread-in-progress-resumes',async()=>{const h=harness();reopen(h,'0.4',{read:true,progress:40});assert.equal(h.c.page,5)});
  await test('relayout-on-end-page-keeps-end-page',async()=>{const h=harness();h.c.page=12;h.c.layout(true);assert.equal(h.c.page,12);h.setCols(13);h.c.layout(true);assert.equal(h.c.page,h.c.pages-1)});
  console.log(JSON.stringify({kind:'source-only-no-native-or-browser',results},null,2));if(results.some(x=>x.status==='failed'))process.exitCode=1;

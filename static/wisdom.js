@@ -657,9 +657,10 @@ async function postRequest(body){
   // (read before, partly read, this device's last page). One turn is one page (owner request, 22 Nov 2026, wisdom#16).
   else if(landStart&&landStart===r.dataset.read){landStart='';page=0;exactFrac=null}
   // Opening a chapter resumes its saved place (this device's, else the synced percentage). A finished chapter (its
-  // saved place resolves to the last page: the end screen) opens on its cover instead, and opening it saves nothing,
-  // so its progress and read state stay as they were until a page is turned (owner request, 22 Nov 2026).
-  else{const e=data.entries.find(x=>x.id===r.dataset.read);let saved=(e?.progress||0)/100;try{const v=localStorage.getItem(posKey(r.dataset.read));if(v!==null)saved=Number(v)||0}catch{}page=e&&Number.isFinite(saved)&&saved>0&&saved<=1?Math.round(saved*(pages-1)):0;if(page>=pages-1){page=0;r.dataset.coverHold=r.dataset.read}exactFrac=page>0?{f:saved,page}:null}
+  // saved place resolves to the last page: the end screen) opens on its cover instead. Opening a finished or read
+  // chapter on its cover saves nothing, so its progress and read state stay as they were until a page is turned
+  // (owner request, 22 Nov 2026).
+  else{const e=data.entries.find(x=>x.id===r.dataset.read);let saved=(e?.progress||0)/100;try{const v=localStorage.getItem(posKey(r.dataset.read));if(v!==null)saved=Number(v)||0}catch{}page=e&&Number.isFinite(saved)&&saved>0&&saved<=1?Math.round(saved*(pages-1)):0;if(page>=pages-1||page===0&&e&&(e.read||(Number(e.progress)||0)>=100)){page=0;r.dataset.coverHold=r.dataset.read}exactFrac=page>0?{f:saved,page}:null}
   go(page,false);
   if(anchored!==null)textAnchor={read:r.dataset.read,off:anchored,page};
  }
